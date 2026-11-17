@@ -183,7 +183,7 @@ func (s *Server) reelEffectiveLockedDragInFields(ctx context.Context, row *store
 	base, durability, bearingFactor, gearFactor float64) float64 {
 	mechanical := 0.0
 	if row != nil {
-		if spec, ok := reelRootSpec(row.ItemID); ok {
+		if spec, ok := s.reelRootSpecForItem(ctx, row.ItemID); ok {
 			if durability > 0 {
 				_, _, bearingDur := s.reelPartStateFromRow(ctx, row, reelPartCatBearing)
 				mechanical = spec * clampUnit(bearingDur)

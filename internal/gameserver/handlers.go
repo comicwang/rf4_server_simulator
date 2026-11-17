@@ -54,17 +54,21 @@ func hGameTime(ctx *Ctx) ([]byte, bool) {
 }
 
 // hGameConfigs 1/4：按请求类型回纯 LZMA 配置 blob（0x08 bytes 包裹）。
-// blob 原样下发即可与 1/5 的 SHA1 保持一致；客户端写入缓存时会自行处理排列。
+// 使用与 1/5 相同的会话快照，避免管理端更新期间版本和内容不一致。
 func hGameConfigs(ctx *Ctx) ([]byte, bool) {
 	typ, ok := ctx.ArgInt(0)
 	if !ok || typ == 0 {
 		return emptyArgsBody(), true
 	}
-	blob, err := configBlob(int(typ))
-	if err != nil {
-		ctx.Log.Info("1/4 无该类型配置，回空 args", "type", typ, "err", err)
+	if typ > 9 {
 		return emptyArgsBody(), true
 	}
+	configs, err := ctx.Sess.clientConfigs()
+	if err != nil {
+		ctx.Log.Error("1/4 构建客户端配置失败", "err", err)
+		return nil, false
+	}
+	blob := configs.blobs[typ-1]
 	ctx.Log.Info("1/4 下发配置", "type", typ, "bytes", len(blob))
 	body := append([]byte{0x08}, proto.PackU32(uint32(len(blob)))...)
 	return append(body, blob...), true
@@ -73,12 +77,12 @@ func hGameConfigs(ctx *Ctx) ([]byte, bool) {
 // hGameConfigsVersion 1/5：返回 9 个 SHA1 字符串的 0x04 数组。
 // 响应不能为空数组，客户端启动流程会直接读取首项。
 func hGameConfigsVersion(ctx *Ctx) ([]byte, bool) {
-	vers, err := configVersions()
-	if err != nil || len(vers) == 0 {
-		ctx.Log.Error("1/5 无配置版本表，客户端启动将失败" +
-			"（检查 assets/config_wire/index.json 是否嵌入且 versions 可解析）")
-		return []byte{0x04, 0x00, 0x00}, true
+	configs, err := ctx.Sess.clientConfigs()
+	if err != nil {
+		ctx.Log.Error("1/5 构建客户端配置失败", "err", err)
+		return nil, false
 	}
+	vers := configs.versions
 	out := []byte{0x04}
 	out = append(out, proto.PackU16(uint32(len(vers)))...)
 	for _, v := range vers {

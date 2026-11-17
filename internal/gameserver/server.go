@@ -47,6 +47,10 @@ type Server struct {
 	dispatch *Dispatch
 	DB       *store.DB // 可空：模板兜底降级（生产由 cmd 装配）
 
+	configMu          sync.Mutex
+	customConfigKey   [32]byte
+	customConfigCache *clientConfigSnapshot
+
 	mu       sync.Mutex
 	sessions map[uint64]*Session // 网关 sid -> 会话
 	byToken  map[string]*Session // 活跃会话（重连接管）

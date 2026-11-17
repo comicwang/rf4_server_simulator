@@ -167,9 +167,18 @@ func TestTungusShopAdminAndPurchaseShelvesAgree(t *testing.T) {
 	if err := db.SetAdminShopOverride(ctx, "tungus_015", "tungus_bot", 0, 30, 0, "test"); err != nil {
 		t.Fatal(err)
 	}
-	items, err := db.ListAdminStoreItems(ctx, "tungus_015", "", 100)
+	items, err := db.ListAdminStoreItems(ctx, "tungus_015", "", -1, 100)
 	if err != nil || len(items) != 95 {
 		t.Fatalf("管理后台应保留93件上游商品并补齐两件特产: count=%d err=%v", len(items), err)
+	}
+	baits, err := db.ListAdminStoreItems(ctx, "tungus_015", "", items[0].Category, 100)
+	if err != nil || len(baits) == 0 {
+		t.Fatalf("货架类别筛选失败: count=%d err=%v", len(baits), err)
+	}
+	for _, row := range baits {
+		if row.Category != items[0].Category {
+			t.Fatalf("类别筛选返回其他商品: %+v", row)
+		}
 	}
 	var totalStock int64
 	for _, row := range items {
@@ -264,7 +273,7 @@ func TestShopCatalogPreservesCurrencyAndPerStoreOverrides(t *testing.T) {
 		t.Fatalf("基础货架被原地修改: base=%+v", otherBase)
 	}
 
-	items, err := db.ListAdminStoreItems(ctx, "atm_006", "钱包", 10)
+	items, err := db.ListAdminStoreItems(ctx, "atm_006", "钱包", -1, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -342,7 +351,7 @@ func TestShopSupplementPricesRestockAndAdminStayAligned(t *testing.T) {
 	if err != nil || bought.Gold != 23 || bought.Stock != 1000 {
 		t.Fatalf("override/restock inconsistent: %+v %v", bought, err)
 	}
-	admin, err := db.ListAdminStoreItems(ctx, "fishingstore_009", "gold_line", 10)
+	admin, err := db.ListAdminStoreItems(ctx, "fishingstore_009", "gold_line", -1, 10)
 	if err != nil || len(admin) != 1 || admin[0].Gold != bought.Gold || admin[0].Stock != bought.Stock || !admin[0].HasOverride {
 		t.Fatalf("admin differs: %+v %v", admin, err)
 	}

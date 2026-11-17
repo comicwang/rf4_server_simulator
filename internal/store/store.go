@@ -168,6 +168,10 @@ func (d *DB) Migrate() error {
 	}
 	if d.static != nil {
 		guardCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := d.enableCustomItemViews(guardCtx); err != nil {
+			cancel()
+			return fmt.Errorf("启用运行时商品变体视图: %w", err)
+		}
 		defer cancel()
 		if err := d.EnableStaticReadOnly(guardCtx); err != nil {
 			return fmt.Errorf("启用静态表只读隔离: %w", err)

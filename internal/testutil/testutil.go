@@ -9,16 +9,20 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"rf4server/internal/config"
 	"rf4server/internal/gateway"
 	"rf4server/internal/logging"
 	"rf4server/internal/proto"
+	"rf4server/internal/store"
 )
 
 // TestPSK 测试隧道 PSK。
@@ -29,26 +33,11 @@ type GatewayHandle struct {
 	LoginURL      string
 	LoginPlainURL string
 	RealAddr      string
-	// Store 是本次装配使用的存储。声明成接口是为了让测试能包一层注入故障
-	// （例如让 LoadHandoff 返回真实错误），而不用改生产代码加测试钩子。
-	Store gateway.Store
-	// RT 暴露 realtime 服务本体，供关闭顺序 / 重连接管相关测试直接驱动。
-	RT *gateway.RealtimeServer
-	// TM 暴露隧道管理器，供关闭链延迟测试单独驱动 tm.Close()。
-	TM *gateway.TunnelManager
+	Store         gateway.Store
 }
 
 // StartGateway 在随机端口装配一个进程内网关（MemStore + 指定隧道地址）。
 func StartGateway(t *testing.T, tunnelAddr, psk string) *GatewayHandle {
-	t.Helper()
-	return StartGatewayWithStore(t, tunnelAddr, psk, gateway.NewMemStore(1000001))
-}
-
-// StartGatewayWithStore 用调用方给定的存储装配网关。
-//
-// 存储声明成接口，是为了让测试能包一层注入故障（例如让 LoadHandoff 返回
-// 真实错误），从而覆盖「读库失败」这类分支，而不用给生产代码加测试钩子。
-func StartGatewayWithStore(t *testing.T, tunnelAddr, psk string, store gateway.Store) *GatewayHandle {
 	t.Helper()
 	cfg := config.Gateway{
 		LoginAddr:             "127.0.0.1:0",
@@ -68,15 +57,37 @@ func StartGatewayWithStore(t *testing.T, tunnelAddr, psk string, store gateway.S
 	if err := gateway.EnsureCert(cfg.CertFile, cfg.KeyFile, cfg.LoginDomain); err != nil {
 		t.Fatal(err)
 	}
+	db, err := store.Open(filepath.Join(t.TempDir(), "gateway.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Migrate(); err != nil {
+		_ = db.Close()
+		t.Fatal(err)
+	}
+	if _, err := db.EnsureProfile(context.Background(), 1000001); err != nil {
+		_ = db.Close()
+		t.Fatal(err)
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte("test login password"), bcrypt.MinCost)
+	if err != nil {
+		_ = db.Close()
+		t.Fatal(err)
+	}
+	if err := db.SetPortalAccount(context.Background(), 1000001, "test_login", string(hash)); err != nil {
+		_ = db.Close()
+		t.Fatal(err)
+	}
 	log := logging.Discard()
 	tm := gateway.NewTunnelManager(tunnelAddr, psk, log, nil, nil)
-	rt := gateway.NewRealtimeServer(cfg, store, log, tm, nil)
+	sessionStore := gateway.NewSQLiteStore(db, log)
+	rt := gateway.NewRealtimeServer(cfg, sessionStore, log, tm, nil)
 	if err := rt.Listen(); err != nil {
 		t.Fatal(err)
 	}
 	tm.SetGateway(rt)
 	go func() { _ = rt.Serve() }()
-	login, err := gateway.NewLoginServer(cfg, store, log, nil)
+	login, err := gateway.NewLoginServer(cfg, sessionStore, log, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,14 +98,13 @@ func StartGatewayWithStore(t *testing.T, tunnelAddr, psk string, store gateway.S
 		_ = rt.Close()
 		_ = login.Shutdown(context.Background())
 		tm.Close()
+		_ = db.Close()
 	})
 	return &GatewayHandle{
 		LoginURL:      "https://" + login.Addr() + "/login.php",
 		LoginPlainURL: "http://" + login.CompatAddr() + "/login.php",
 		RealAddr:      rt.RealAddr(),
-		Store:         store,
-		RT:            rt,
-		TM:            tm,
+		Store:         sessionStore,
 	}
 }
 
@@ -103,7 +113,7 @@ func (g *GatewayHandle) Login(t *testing.T) (token string, userid int64) {
 	t.Helper()
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	httpc := &http.Client{Transport: tr, Timeout: 5 * time.Second}
-	resp, err := httpc.Get(g.LoginURL)
+	resp, err := httpc.Get(g.LoginURL + "?login=test_login&password=test+login+password")
 	if err != nil {
 		t.Fatalf("登录请求: %v", err)
 	}

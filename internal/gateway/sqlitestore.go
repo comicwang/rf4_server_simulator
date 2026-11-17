@@ -50,32 +50,35 @@ func (s *SQLiteStore) LookupToken(ctx context.Context, token string) (TokenInfo,
 		}
 		return TokenInfo{}, false, err
 	}
-	return decodeTokenInfo(infoJSON, expiresF)
+	return s.decodeTokenInfo(ctx, infoJSON, expiresF)
 }
 
 // lookupByPrefix 前缀匹配（token 以 logintoken 开头）。
 func (s *SQLiteStore) lookupByPrefix(ctx context.Context, prefix string) (TokenInfo, bool, error) {
-	if len(prefix) < 8 {
+	if !isTokenPrefix(prefix) {
 		return TokenInfo{}, false, nil
 	}
 	var infoJSON string
 	var expiresF float64
 	err := s.DB.SQL.QueryRowContext(ctx,
-		`SELECT info_json, expires FROM gw_token WHERE token LIKE ?||'%' AND length(token)>? ORDER BY expires DESC LIMIT 1`,
-		prefix, len(prefix)).Scan(&infoJSON, &expiresF)
+		`SELECT info_json, expires FROM gw_token WHERE substr(token,1,64)=? AND length(token)>64 ORDER BY expires DESC LIMIT 1`,
+		prefix).Scan(&infoJSON, &expiresF)
 	if err != nil {
 		return TokenInfo{}, false, nil // 无前缀命中
 	}
-	return decodeTokenInfo(infoJSON, expiresF)
+	return s.decodeTokenInfo(ctx, infoJSON, expiresF)
 }
 
-func decodeTokenInfo(infoJSON string, expires float64) (TokenInfo, bool, error) {
+func (s *SQLiteStore) decodeTokenInfo(ctx context.Context, infoJSON string, expires float64) (TokenInfo, bool, error) {
 	if float64(time.Now().Unix()) > expires {
 		return TokenInfo{}, false, nil
 	}
 	var info TokenInfo
 	if err := json.Unmarshal([]byte(infoJSON), &info); err != nil {
 		return TokenInfo{}, false, err
+	}
+	if info.AccountVersion <= 0 || !s.DB.ValidatePortalSession(ctx, info.Userid, info.AccountVersion) {
+		return TokenInfo{}, false, nil
 	}
 	return info, true, nil
 }
@@ -97,14 +100,8 @@ func (s *SQLiteStore) LoadHandoff(ctx context.Context, token string) (*Handoff, 
 	var stateJSON string
 	err := s.DB.SQL.QueryRowContext(ctx,
 		`SELECT state_json FROM gw_handoff WHERE token=?`, token).Scan(&stateJSON)
-	if errors.Is(err, sql.ErrNoRows) {
-		// 「没有可承接状态」是正常分支，用 nil, nil 表达。
-		return nil, nil
-	}
 	if err != nil {
-		// 读库真出错（库已关闭、锁冲突）必须报出去：把它当成「没有 handoff」
-		// 会让重连静默退回新密码流，日志里只留下满屏「信封解析失败」。
-		return nil, err
+		return nil, nil
 	}
 	var h Handoff
 	if err := json.Unmarshal([]byte(stateJSON), &h); err != nil {

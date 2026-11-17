@@ -5,6 +5,8 @@
 ## 使用与部署
 
 - [部署指南](deploy.md)：构建、配置、初始化、启动、客户端接入与安全约束。
+- [正式环境客户端配置](production-client.md)：本次公网地址、Windows 连接助手、证书安装和恢复步骤。
+- [正式环境运维记录](production-deploy.md)：本次服务版本、目录、端口、在线备份和回滚命令。
 - [Docker Compose 部署](../docker/README.md)：多服务容器、本地与局域网接入、存档和更新。
 - [Docker 单容器部署](../DOCKER.md)：单镜像构建、必需配置与数据卷。
 - [客户端兼容性检查清单](client-checklist.md)：登录、会话、玩家状态、钓鱼、物品与经济等回归项。
@@ -95,7 +97,6 @@
 - [工程工作流](agents/workflow.md)：快速路径与约束路径的分级、门禁级别。
 - [变更记录约定](agents/issue-tracker.md)：`specs/changes` 目录与状态流转。
 - [档案与技能树统一显示可用技能点](../specs/changes/issue-401-skill-points/spec.md)：Issue #401 的修复范围与验证状态。
-- [商店扣款前校验物品可下发性](../specs/changes/store-goods-wire-preflight/spec.md)：吸引成分购买可见性与异常商品拒购边界。
 - [领域文档约定](agents/domain.md)：文档地图、证据等级、对账表。
 - [ADR 0001](adr/0001-engineering-constraints.md)：为什么采用按风险分级的约束体系。
 

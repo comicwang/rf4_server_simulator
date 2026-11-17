@@ -4,18 +4,17 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
+	"sort"
 	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -48,7 +47,7 @@ const legacyLoginXMLTpl = `<?xml version="1.0" encoding="UTF-8"?>
 	`<region>%s</region><userid>%d</userid><logintoken>%s</logintoken>` +
 	`<logintokenexpires>%d</logintokenexpires></response>`
 
-// LoginServer HTTPS 登录服务：任何路径都返回 <logon> XML（客户端打 /login.php 或 /steam.php）。
+// LoginServer 登录端点：账号登录、已签发 token 续期和登录失败均使用客户端 XML 格式。
 type LoginServer struct {
 	cfg       config.Gateway
 	store     Store
@@ -58,7 +57,6 @@ type LoginServer struct {
 	ln        net.Listener
 	compatSrv *http.Server
 	compatLn  net.Listener
-	userid    int64 // 本进程内递增序号，共享序号不可用时使用
 }
 
 // NewLoginServer 构建登录服务（含观测指标注册）。
@@ -74,7 +72,7 @@ func NewLoginServer(cfg config.Gateway, store Store, log *slog.Logger, obs *metr
 	// 登录服务本来就接受任意路径，因此直接使用 HandlerFunc，保留 RequestURI。
 	s.handler = http.HandlerFunc(s.handleLogin)
 	if storage, ok := store.(*SQLiteStore); ok {
-		accountPortal := portal.New(storage.DB, s.useridForRemote)
+		accountPortal := portal.New(storage.DB)
 		s.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(r.URL.Path, "/portal/") {
 				accountPortal.ServeHTTP(w, r)
@@ -173,18 +171,45 @@ func (s *LoginServer) Shutdown(ctx context.Context) error {
 
 func (s *LoginServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 	loginRequests.Inc()
-	_ = r.Body.Close()
-	// 客户端登录不发送账号凭据；本机固定 userid，其他来源 IP 分配独立 userid，
-	// 这样同一台机器重登档案连续，Radmin/局域网多客户端也能各自有账号。
-	userid := s.useridForRemote(r.RemoteAddr)
-	if userid <= 0 {
-		userid, _ = s.nextUserid(r.Context())
+	info, authMethod, err := s.resolveLoginIdentity(w, r)
+	if err != nil {
+		loginErrors.Inc()
+		if errors.Is(err, errUnsupportedLoginPath) {
+			http.NotFound(w, r)
+			return
+		}
+		writeLoginFailure(w, r)
+		fields := r.URL.Query()
+		if r.Form != nil {
+			fields = r.Form
+		}
+		keys := make([]string, 0, len(fields))
+		for key := range fields {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		reason := "account_unavailable"
+		switch {
+		case errors.Is(err, errMissingLoginCredentials):
+			reason = "missing_credentials"
+		case errors.Is(err, sql.ErrNoRows):
+			reason = "unknown_or_banned_account"
+		case errors.Is(err, portal.ErrInvalidCredentials):
+			reason = "invalid_credentials"
+		case errors.Is(err, portal.ErrGamePasswordUnavailable):
+			reason = "game_password_requires_web_login"
+		}
+		s.log.Warn("登录拒绝", "method", r.Method, "path", r.URL.Path, "remote", r.RemoteAddr,
+			"reason", reason, "fields", strings.Join(keys, ","))
+		return
 	}
-	info := TokenInfo{Userid: userid, IssuedAt: time.Now().Unix(), Region: s.cfg.Region}
+	userid := info.Userid
+	info.IssuedAt = time.Now().Unix()
+	info.Region = s.cfg.Region
 	ttl := time.Duration(s.cfg.TokenTTL) * 24 * time.Hour
 	expires := time.Now().Add(ttl).Unix()
 	var token, logintoken, xml string
-	if r.TLS == nil {
+	if legacyLoginFormat(r) {
 		// 旧版 CN 客户端会把 token 当 URI 片段使用，不能包含 '|' 或 '/'。
 		// 这里沿用旧后端的 32hex token / 48hex logintoken，并登记到同一 SQLite。
 		token = NewLegacyToken()
@@ -214,13 +239,19 @@ func (s *LoginServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		// HTTPS 作者通道继续使用 4 段 logintoken。
 		logintoken = NewLogintoken(userid)
+		if err := s.store.SaveToken(r.Context(), logintoken, info, ttl); err != nil {
+			loginErrors.Inc()
+			s.log.Error("保存登录 token 失败", "err", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
 		xml = fmt.Sprintf(loginXMLTpl,
 			s.cfg.AdvertiseHost, s.cfg.AdvertisePort,
 			s.cfg.Region, s.cfg.ServerName, userid,
 			token, logintoken, expires)
 	}
 	loginIssued.Inc()
-	if r.TLS == nil {
+	if legacyLoginFormat(r) {
 		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Pragma", "no-cache")
@@ -232,19 +263,73 @@ func (s *LoginServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(xml))
 	s.log.Info("登录",
-		"method", r.Method, "request_uri", r.RequestURI, "path", r.URL.Path,
-		"raw_path", r.URL.RawPath, "remote", r.RemoteAddr,
-		"userid", userid, "region", s.cfg.Region, "realtime", s.cfg.AdvertiseHost)
+		"method", r.Method, "path", r.URL.Path, "remote", r.RemoteAddr,
+		"auth_method", authMethod, "userid", userid, "region", s.cfg.Region,
+		"realtime", s.cfg.AdvertiseHost)
 }
 
-func (s *LoginServer) nextUserid(ctx context.Context) (int64, error) {
-	// 从共享存储获取下一个 userid；共享存储不可用时退化为进程内序号。
-	if v, err := s.store.NextUserid(ctx); err == nil {
-		return v, nil
-	} else {
-		s.log.Warn("共享 userid 序号不可用，退化进程内序号", "err", err)
+var errUnsupportedLoginPath = errors.New("unsupported login path")
+var errMissingLoginCredentials = errors.New("missing login credentials")
+
+func (s *LoginServer) resolveLoginIdentity(w http.ResponseWriter, r *http.Request) (TokenInfo, string, error) {
+	path := strings.ToLower(r.URL.Path)
+	values := r.URL.Query()
+	if r.Method == http.MethodPost {
+		r.Body = http.MaxBytesReader(w, r.Body, 4096)
+		if err := r.ParseForm(); err != nil {
+			return TokenInfo{}, "", err
+		}
+		values = r.Form
 	}
-	return atomic.AddInt64(&s.userid, 1), nil
+
+	if strings.HasSuffix(path, "/login.php") || path == "/login.php" ||
+		strings.HasSuffix(path, "/steam.php") || path == "/steam.php" {
+		username, password := values.Get("login"), values.Get("password")
+		if username == "" || password == "" {
+			return TokenInfo{}, "", errMissingLoginCredentials
+		}
+		storage, ok := s.store.(*SQLiteStore)
+		if !ok {
+			return TokenInfo{}, "", portal.ErrInvalidCredentials
+		}
+		uid, version, err := portal.AuthenticateGame(r.Context(), storage.DB, username, password)
+		if err != nil {
+			return TokenInfo{}, "", err
+		}
+		return TokenInfo{Userid: uid, AccountVersion: version}, "account_password", nil
+	}
+
+	if strings.HasSuffix(path, "/login_token.php") || path == "/login_token.php" {
+		presented := strings.TrimSpace(values.Get("token"))
+		if presented == "" {
+			return TokenInfo{}, "", portal.ErrInvalidCredentials
+		}
+		info, ok, err := s.store.LookupToken(r.Context(), presented)
+		if err != nil || !ok || info.Userid <= 0 {
+			return TokenInfo{}, "", portal.ErrInvalidCredentials
+		}
+		return info, "token", nil
+	}
+
+	return TokenInfo{}, "", errUnsupportedLoginPath
+}
+
+// Format selection only changes XML/token encoding; account checks are identical.
+func legacyLoginFormat(r *http.Request) bool {
+	return r.TLS == nil || r.Header.Get("X-RF4-Login-Format") == "legacy"
+}
+
+func writeLoginFailure(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Connection", "close")
+	body := `<logon success="false"><error>账号或密码错误</error></logon>`
+	if legacyLoginFormat(r) {
+		body = `<?xml version="1.0" encoding="UTF-8"?><response success="false"><error>账号或密码错误</error></response>`
+	}
+	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+	_, _ = w.Write([]byte(body))
 }
 
 // NewToken 生成 4 段 token：hex(32B)|unix|userid|base64(168B)。
@@ -289,53 +374,4 @@ func NewLogintoken(userid int64) string {
 		strconv.FormatInt(userid, 10),
 		hex.EncodeToString(t[:]),
 	}, "|")
-}
-
-// ---- 局域网/Radmin 多账号：按来源 IP 分配 userid ----
-
-var (
-	ipUIDOnce sync.Once
-	ipUIDMu   sync.Mutex
-	ipUIDMap  = map[string]int64{}
-)
-
-func (s *LoginServer) useridForRemote(remote string) int64 {
-	host, _, err := net.SplitHostPort(remote)
-	if err != nil {
-		host = remote
-	}
-	base := s.cfg.UseridStart
-	if base <= 0 {
-		base = 1000001
-	}
-	// 本机保持原固定 UID，避免现有存档换号。
-	if host == "" || host == "127.0.0.1" || host == "::1" || host == "localhost" {
-		return base
-	}
-	ipUIDOnce.Do(func() {
-		if b, err := os.ReadFile("gateway_ip_uids.json"); err == nil {
-			_ = json.Unmarshal(b, &ipUIDMap)
-		}
-		if ipUIDMap == nil {
-			ipUIDMap = map[string]int64{}
-		}
-	})
-	ipUIDMu.Lock()
-	defer ipUIDMu.Unlock()
-	if uid, ok := ipUIDMap[host]; ok && uid > 0 {
-		return uid
-	}
-	max := base
-	for _, v := range ipUIDMap {
-		if v > max {
-			max = v
-		}
-	}
-	uid := max + 1
-	ipUIDMap[host] = uid
-	if b, err := json.MarshalIndent(ipUIDMap, "", "  "); err == nil {
-		_ = os.WriteFile("gateway_ip_uids.json", b, 0o644)
-	}
-	s.log.Info("LAN 账号分配", "ip", host, "userid", uid)
-	return uid
 }

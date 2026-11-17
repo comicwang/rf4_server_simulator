@@ -45,6 +45,8 @@ type Session struct {
 
 	stateMu      sync.Mutex
 	state        map[string]any // 会话级业务状态（选图、抛竿状态等）
+	configMu     sync.Mutex
+	configs      *clientConfigSnapshot
 	weatherMu    sync.RWMutex
 	weatherPlans map[string]fishingWeatherPlan
 	happyMu      sync.RWMutex

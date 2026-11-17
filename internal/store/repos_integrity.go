@@ -17,7 +17,7 @@ var StaticTables = []string{
 // PlayerTables 是随玩家操作变化的可写表。place_access 必须在这里登记，
 // 否则玩家库拆分/备份会漏掉地图买断状态。
 var PlayerTables = []string{
-	"profile", "item", "container_slot", "owned_items", "rig", "rig_component",
+	"profile", "portal_account", "portal_game_password", "item", "container_slot", "owned_items", "rig", "rig_component",
 	"rod_pod_setting", "rod_pod_alarm", "rod_setting", "txn", "mail", "keepnet_items",
 	"skill", "skill_node", "player_counters", "player_achievements", "player_qualifications", "device",
 	"catch_log", "catch_seen", "competition", "competition_member", "competition_result", "named_fish", "place_access",
@@ -40,6 +40,7 @@ var RuntimeTables = []string{
 	"fish_weight_override", "fish_bite_setting", "fish_grade_lines", "skill_link",
 	"fish_ecology", "skill_fish_effect_def", "skill_cast_effect_def", "hook_bite_profile", "fish_bait_override",
 	"fish_zone", "fish_zone_fish",
+	"custom_item_def",
 	// rf4records 官方周纪录捕获表：tools/fetch_rf4records.py（外部证据管道）写入，
 	// 运营数据，非静态资料也非玩家存档。
 	"rf4records_catch",

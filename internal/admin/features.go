@@ -2,8 +2,10 @@ package admin
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -11,6 +13,7 @@ import (
 	"time"
 
 	"rf4server/internal/fishmaps"
+	"rf4server/internal/gameserver"
 	"rf4server/internal/store"
 )
 
@@ -210,8 +213,15 @@ func (s *Server) handleStores(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleStoreItems(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	category, err := strconv.ParseInt(r.URL.Query().Get("category"), 10, 64)
+	if r.URL.Query().Get("category") == "" {
+		category = -1
+	} else if err != nil || category < 0 {
+		httpError(w, 400, "商品分类无效")
+		return
+	}
 	rows, err := s.db.ListAdminStoreItems(r.Context(), r.URL.Query().Get("store_id"),
-		r.URL.Query().Get("q"), limit)
+		r.URL.Query().Get("q"), category, limit)
 	if err != nil {
 		httpError(w, 400, err.Error())
 		return
@@ -256,6 +266,344 @@ func (s *Server) handleStoreItemReset(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = s.db.AuditLogWrite(r.Context(), adminOf(r), "shop_override_reset", req.StoreID+"/"+req.ItemID, "")
 	writeJSON(w, map[string]any{"ok": true})
+}
+
+type customProductBase struct {
+	ItemID     string                              `json:"item_id"`
+	BaseItemID string                              `json:"base_item_id,omitempty"`
+	Name       string                              `json:"name"`
+	Category   int64                               `json:"category"`
+	MaxLoadKG  *float64                            `json:"max_load_kg,omitempty"`
+	MaxDragKG  *float64                            `json:"max_drag_kg,omitempty"`
+	Parameters []gameserver.CustomProductParameter `json:"parameters"`
+	Silver     int64                               `json:"silver"`
+	Gold       int64                               `json:"gold"`
+	Stock      int64                               `json:"stock"`
+}
+
+func customProductDefinition(ctx context.Context, db *store.DB, itemID string) (*store.ItemDef, error) {
+	var def store.ItemDef
+	query := `SELECT d.numeric_id,COALESCE(d.item_id,''),COALESCE(d.category,0),COALESCE(d.kind,''),
+		COALESCE(d.brand,''),COALESCE(d.attrs_json,'') FROM item_def d
+		LEFT JOIN item_catalog c ON c.item_id=d.item_id
+		WHERE d.item_id=? AND ` + completeCatalogCondition()
+	err := db.SQL.QueryRowContext(ctx, query, strings.TrimSpace(itemID)).Scan(
+		&def.NumericID, &def.ItemID, &def.Category, &def.Kind, &def.Brand, &def.AttrsJSON)
+	if err == nil {
+		return &def, nil
+	}
+	if err == sql.ErrNoRows {
+		err = db.SQL.QueryRowContext(ctx, `SELECT numeric_id,item_id,category,kind,brand,attrs_json
+			FROM custom_item_def WHERE item_id=?`, strings.TrimSpace(itemID)).Scan(
+			&def.NumericID, &def.ItemID, &def.Category, &def.Kind, &def.Brand, &def.AttrsJSON)
+		if err == nil {
+			return &def, nil
+		}
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("商品不存在或不是完整商品: %s", itemID)
+		}
+	}
+	return nil, err
+}
+
+func customProductAttrs(def *store.ItemDef) (map[string]any, *float64, *float64, error) {
+	attrs := map[string]any{}
+	decoder := json.NewDecoder(strings.NewReader(def.AttrsJSON))
+	decoder.UseNumber()
+	if err := decoder.Decode(&attrs); err != nil || attrs == nil {
+		return nil, nil, nil, fmt.Errorf("商品属性格式无效")
+	}
+	var maxLoad, maxDrag *float64
+	if raw, ok := attrs["kngaaefkpka"]; ok {
+		if value, valid := customF32Value(raw); valid {
+			maxLoad = &value
+		}
+	}
+	dragAttrs, _ := attrs["mlfjkaoicdn"].(map[string]any)
+	if raw, ok := dragAttrs["omghfmdfjpc"]; ok {
+		if value, valid := customF32Value(raw); valid {
+			maxDrag = &value
+		}
+	} else if raw, ok := attrs["omghfmdfjpc"]; ok {
+		if value, valid := customF32Value(raw); valid {
+			maxDrag = &value
+		}
+	}
+	return attrs, maxLoad, maxDrag, nil
+}
+
+func customF32Value(raw any) (float64, bool) {
+	number, ok := raw.(json.Number)
+	if !ok {
+		return 0, false
+	}
+	n, err := strconv.ParseUint(string(number), 10, 32)
+	if err != nil {
+		return 0, false
+	}
+	return float64(math.Float32frombits(uint32(n))), true
+}
+
+func setCustomF32Attr(attrs map[string]any, parent, key string, value *float64) error {
+	if value == nil {
+		return nil
+	}
+	if math.IsNaN(*value) || math.IsInf(*value, 0) || *value < 0.01 || *value > 100000 {
+		return fmt.Errorf("%s 必须在 0.01~100000 kg 之间", key)
+	}
+	target := attrs
+	if parent != "" {
+		var ok bool
+		target, ok = attrs[parent].(map[string]any)
+		if !ok {
+			return fmt.Errorf("基础商品不支持该参数")
+		}
+	}
+	if _, ok := target[key]; !ok {
+		return fmt.Errorf("基础商品不支持该参数")
+	}
+	target[key] = math.Float32bits(float32(*value))
+	return nil
+}
+
+func (s *Server) handleCustomProductBase(w http.ResponseWriter, r *http.Request) {
+	def, err := customProductDefinition(r.Context(), s.db, r.URL.Query().Get("item_id"))
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	custom, err := s.db.ListCustomItemDefinitions(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	base, err := s.customProductSummary(r.Context(), def, custom)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	writeJSON(w, base)
+}
+
+func (s *Server) customProductSummary(ctx context.Context, def *store.ItemDef, custom []store.CustomItemDefinition) (*customProductBase, error) {
+	_, maxLoad, maxDrag, err := customProductAttrs(def)
+	if err != nil {
+		return nil, err
+	}
+	parameters, err := gameserver.CustomProductParameters(def.ItemID, def.AttrsJSON, custom)
+	if err != nil {
+		return nil, err
+	}
+	var name string
+	if err := s.db.SQL.QueryRowContext(ctx, `SELECT COALESCE(NULLIF(name_zh,''),NULLIF(name,''),?)
+		FROM item_catalog WHERE item_id=?`, def.ItemID, def.ItemID).Scan(&name); err != nil {
+		if err != sql.ErrNoRows {
+			return nil, err
+		}
+		name = def.ItemID
+	}
+	base := customProductBase{ItemID: def.ItemID, Name: name, Category: def.Category,
+		MaxLoadKG: maxLoad, MaxDragKG: maxDrag, Parameters: parameters}
+	if p, err := s.db.ItemPriceGet(ctx, def.ItemID); err == nil {
+		base.Silver, base.Gold, base.Stock = p.Silver, p.Gold, p.Stock
+	}
+	for _, item := range custom {
+		if item.ItemID == def.ItemID {
+			base.BaseItemID = item.BaseItemID
+			base.Name = item.Name
+			break
+		}
+	}
+	return &base, nil
+}
+
+func (s *Server) handleCustomProductGet(w http.ResponseWriter, r *http.Request) {
+	itemID := strings.TrimSpace(r.URL.Query().Get("item_id"))
+	custom, err := s.db.ListCustomItemDefinitions(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	found := false
+	for _, item := range custom {
+		if item.ItemID == itemID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		httpError(w, 404, "定制商品不存在")
+		return
+	}
+	def, err := customProductDefinition(r.Context(), s.db, itemID)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	base, err := s.customProductSummary(r.Context(), def, custom)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	writeJSON(w, base)
+}
+
+func (s *Server) handleCustomProductCreate(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		BaseItemID string            `json:"base_item_id"`
+		Name       string            `json:"name"`
+		MaxLoadKG  *float64          `json:"max_load_kg"`
+		MaxDragKG  *float64          `json:"max_drag_kg"`
+		Parameters map[string]string `json:"parameters"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		httpError(w, 400, "参数错误")
+		return
+	}
+	def, err := customProductDefinition(r.Context(), s.db, req.BaseItemID)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	attrs, _, _, err := customProductAttrs(def)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	changes := req.Parameters
+	if changes == nil {
+		changes = make(map[string]string)
+	}
+	for _, legacy := range []struct {
+		key   string
+		value *float64
+	}{{"kngaaefkpka", req.MaxLoadKG}, {"omghfmdfjpc", req.MaxDragKG}} {
+		if legacy.value == nil {
+			continue
+		}
+		if math.IsNaN(*legacy.value) || math.IsInf(*legacy.value, 0) || *legacy.value < 0.01 || *legacy.value > 100000 {
+			httpError(w, 400, "承力和曳力必须在 0.01~100000 kg 之间")
+			return
+		}
+		path := legacy.key
+		if legacy.key == "omghfmdfjpc" {
+			if brake, ok := attrs["mlfjkaoicdn"].(map[string]any); ok && brake[legacy.key] != nil {
+				path = "mlfjkaoicdn." + path
+			}
+		}
+		changes[path] = strconv.FormatFloat(*legacy.value, 'g', -1, 64)
+	}
+	custom, err := s.db.ListCustomItemDefinitions(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	attrsJSON, err := gameserver.MergeCustomProductParameters(def.ItemID, def.AttrsJSON, custom, changes)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	variant, err := s.db.CreateCustomItemVariant(r.Context(), req.BaseItemID, req.Name,
+		attrsJSON, adminOf(r))
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	_ = s.db.AuditLogWrite(r.Context(), adminOf(r), "custom_item_create", variant.ItemID,
+		fmt.Sprintf("base=%s name=%s", req.BaseItemID, req.Name))
+	writeJSON(w, map[string]any{"ok": true, "item_id": variant.ItemID, "numeric_id": variant.NumericID,
+		"base_item_id": req.BaseItemID, "name": req.Name})
+}
+
+func (s *Server) handleCustomProductUpdate(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ItemID     string            `json:"item_id"`
+		Name       string            `json:"name"`
+		Parameters map[string]string `json:"parameters"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		httpError(w, 400, "参数错误")
+		return
+	}
+	itemID := strings.TrimSpace(req.ItemID)
+	custom, err := s.db.ListCustomItemDefinitions(r.Context())
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	found := false
+	for _, item := range custom {
+		if item.ItemID == itemID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		httpError(w, 404, "定制商品不存在")
+		return
+	}
+	def, err := customProductDefinition(r.Context(), s.db, itemID)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	attrsJSON, err := gameserver.MergeCustomProductParameters(itemID, def.AttrsJSON, custom, req.Parameters)
+	if err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	if err := s.db.UpdateCustomItemVariant(r.Context(), itemID, req.Name, attrsJSON); err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	_ = s.db.AuditLogWrite(r.Context(), adminOf(r), "custom_item_update", itemID,
+		fmt.Sprintf("name=%s parameters=%d", req.Name, len(req.Parameters)))
+	writeJSON(w, map[string]any{"ok": true, "item_id": itemID})
+}
+
+// handleStoreItemList 后台强制上架：把完整目录商品挂到指定商店，价格库存
+// 可覆盖；删除覆盖（reset）即下架。与价格覆盖共用 shop_item_override 表。
+func (s *Server) handleStoreItemList(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		StoreID  string   `json:"store_id"`
+		StoreIDs []string `json:"store_ids"`
+		ItemID   string   `json:"item_id"`
+		Silver   int64    `json:"silver"`
+		Gold     int64    `json:"gold"`
+		Stock    int64    `json:"stock"`
+	}
+	if err := readJSON(r, &req); err != nil || (len(req.StoreIDs) == 0 && req.StoreID == "") || req.ItemID == "" {
+		httpError(w, 400, "参数错误")
+		return
+	}
+	storeIDs := req.StoreIDs
+	if len(storeIDs) == 0 {
+		storeIDs = []string{req.StoreID}
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	// 只允许完整商品上架，避免客户端拿到无法渲染的半成品目录行。
+	var exists bool
+	query := `SELECT EXISTS(
+		SELECT 1 FROM item_def d
+		LEFT JOIN item_catalog c ON c.item_id=d.item_id
+		WHERE d.item_id=? AND ` + completeCatalogCondition() + `)`
+	if err := s.db.SQL.QueryRowContext(ctx, query, req.ItemID).Scan(&exists); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	if !exists {
+		httpError(w, 400, "商品不存在或不是完整商品: "+req.ItemID)
+		return
+	}
+	if err := s.db.SetAdminShopListings(ctx, storeIDs, req.ItemID,
+		req.Silver, req.Gold, req.Stock, adminOf(r)); err != nil {
+		httpError(w, 400, err.Error())
+		return
+	}
+	_ = s.db.AuditLogWrite(r.Context(), adminOf(r), "shop_listing", strings.Join(storeIDs, ",")+"/"+req.ItemID,
+		fmt.Sprintf("silver=%d gold=%d stock=%d", req.Silver, req.Gold, req.Stock))
+	writeJSON(w, map[string]any{"ok": true, "store_count": len(storeIDs)})
 }
 
 // fishAreaPaper 标定的纸地图数值，字段与 fishmaps.PaperMap 一致（float32 精度原样下发）。

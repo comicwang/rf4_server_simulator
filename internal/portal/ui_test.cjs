@@ -45,7 +45,7 @@ test('portal and membership editor fit supported widths, DPI and long names',asy
     for(const view of ['portal','admin']){
      await page.goto(base+'/'+view+'/',{waitUntil:'networkidle'});
      if(view==='portal'){
-      await page.locator('#login_button').click();await page.locator('#local-login button[type=submit]').click();
+      await page.locator('#login_button').click();await page.locator('#local-username').fill('test_user');await page.locator('#local-password').fill('correct horse battery');await page.locator('#local-login button[type=submit]').click();
       await page.waitForFunction(text=>document.getElementById('account_name').textContent===text,text);
       await page.locator('.local-plan button').first().waitFor();
       const before=buys;await page.locator('.local-plan button').first().click();

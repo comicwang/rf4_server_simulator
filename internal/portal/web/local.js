@@ -11,7 +11,7 @@ async function buy(planID,state){if(!token){requestLogin();return;}if(busy)retur
 function requestLogin(){if(token)return;$('local-auth-message').textContent='请先进入个人中心，再购买会员。';$('local-member-message').textContent='请先登录：登录后会显示会员套餐。';if(!auth.open)auth.showModal();}
 $('local-member-login').onclick=requestLogin;
 document.querySelector('#main_menu a[href="#local-member"]').addEventListener('click',e=>{if(!token){e.preventDefault();requestLogin();}});
-$('local-login').onsubmit=async e=>{e.preventDefault();const form=e.target,button=form.querySelector('[type=submit]');button.disabled=true;try{const d=await api('/api/session','POST',{});token=d.token;epoch++;await refresh();auth.close();$('local-message').textContent='已进入当前设备角色。';}catch(e){$('local-auth-message').textContent=e.message;}finally{button.disabled=false;}};
+$('local-login').onsubmit=async e=>{e.preventDefault();const form=e.target,button=form.querySelector('[type=submit]');button.disabled=true;try{const d=await api('/api/session','POST',{username:$('local-username').value.trim(),password:$('local-password').value});token=d.token;epoch++;await refresh();auth.close();$('local-password').value='';$('local-message').textContent='已登录个人中心。';}catch(e){$('local-auth-message').textContent=e.message;}finally{button.disabled=false;}};
 $('login_button').onclick=async()=>{if(!token){requestLogin();return;}try{await api('/api/session','DELETE');token='';epoch++;render(null);}catch(e){$('local-message').textContent=e.message;}};
 $('local-auth-close').onclick=()=>auth.close();$('local-refresh').onclick=()=>refresh().catch(e=>$('local-message').textContent=e.message);
 $('close-banner').onclick=()=>document.getElementById('head_banner').hidden=true;

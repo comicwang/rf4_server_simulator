@@ -652,8 +652,10 @@ func (s *Server) reelLockedDragForSpec(ctx context.Context, ids rigGearIDs, def 
 			}
 		}
 	}
-	if spec := reelMechStrengthKg(def); spec > 0 {
-		return spec * clampUnit(ids.ReelDurability)
+	if def != nil {
+		if spec, ok := s.reelRootSpecForItem(ctx, def.ItemID); ok {
+			return spec * clampUnit(ids.ReelDurability)
+		}
 	}
 	return reelDragMaxKg(def) * reelLockMultiplier(ids.ReelDurability)
 }

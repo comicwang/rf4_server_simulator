@@ -165,8 +165,18 @@ func (d *DB) SetBanned(ctx context.Context, uid int64, banned bool) error {
 	if banned {
 		v = 1
 	}
-	_, err := d.SQL.ExecContext(ctx, `UPDATE profile SET banned=? WHERE uid=?`, v, uid)
-	return err
+	tx, err := d.SQL.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `UPDATE profile SET banned=? WHERE uid=?`, v, uid); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE portal_account SET version=version+1 WHERE uid=?`, uid); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // IsBanned 查封禁。

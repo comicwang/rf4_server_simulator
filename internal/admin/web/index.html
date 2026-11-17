@@ -14,9 +14,10 @@ button,input,select,textarea{font:inherit;color:var(--text)}button{cursor:pointe
 .view{display:none;animation:fade .2s ease}@keyframes fade{from{opacity:.3;transform:translateY(4px)}to{opacity:1;transform:none}}.view.on{display:block}
 .grid{display:grid;gap:16px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}.stat .k{color:var(--muted);font-size:12px}.stat .v{font-size:30px;font-weight:800;margin:6px 0}.stat .s{font-size:11px;color:var(--accent2)}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.section-head h2{font-size:16px;margin:0}.section-head small{color:var(--muted)}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.toolbar .grow{flex:1;min-width:190px}.split{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}.player-list{max-height:calc(100vh - 170px);overflow:auto}.player-row{display:flex;justify-content:space-between;gap:10px;padding:11px;border-radius:11px;border:1px solid transparent;cursor:pointer}.player-row:hover,.player-row.on{background:#14273b;border-color:#2a4963}.player-row .n{font-weight:700}.player-row .id{font-size:11px;color:var(--muted)}.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 8px;background:#1c3148;color:#bcd1e4;font-size:11px}.pill.ok{background:#123a2e;color:#6ff0b7}.pill.bad{background:#441d28;color:#ff91a1}.online-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}.online-dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}.online-dot.off{background:var(--danger);box-shadow:0 0 6px #ff617866}.player-flags{display:flex;align-items:center;gap:8px;flex:none}.legend{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;white-space:nowrap}.empty{padding:42px 16px;text-align:center;color:var(--muted)}
 .player-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px}.player-hero h2{margin:0;font-size:21px}.player-hero .sub{color:var(--muted);font-size:12px}.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:12px 0 16px;overflow:auto}.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:9px 12px}.tabs button.on{color:#fff;border-color:var(--accent)}.form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.field label{display:block;color:var(--muted);font-size:11px;margin:0 0 5px}.field.span2{grid-column:span 2}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
-.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 11px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}th{position:sticky;top:0;background:#101e2d;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;z-index:1}tr:last-child td{border-bottom:0}tbody tr:hover{background:#15263a}.mono{font-family:Consolas,monospace}.mini-input{padding:6px 8px;border-radius:7px;min-width:72px}.item-cell{display:flex;align-items:center;gap:12px}.fish-icon{width:80px;height:40px;object-fit:contain;flex:0 0 80px;border-radius:8px;cursor:zoom-in;transition:transform .16s ease,box-shadow .16s ease;transform-origin:left center}.fish-icon:hover{transform:scale(1.6);box-shadow:0 14px 34px #000c}.item-icon{width:52px;height:52px;object-fit:contain;border-radius:8px;background:#0b1726;border:1px solid var(--line);padding:3px;flex:0 0 52px;cursor:zoom-in;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;transform-origin:left center}.item-icon:hover{transform:scale(2.4);box-shadow:0 14px 34px #000c;border-color:var(--accent)}tbody tr:has(.item-icon:hover){position:relative;z-index:12}.table-wrap:has(.item-icon:hover){overflow:visible}.tag{font-size:10px;padding:2px 6px;border-radius:5px;background:#25405b}.tag.gold{background:#493c1d;color:#ffd479}.tag.blue{background:#183e60;color:#84d5ff}.muted{color:var(--muted)}.right{text-align:right}.danger-text{color:#ff8797}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:10px 11px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}th{position:sticky;top:0;background:#101e2d;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;z-index:1}tr:last-child td{border-bottom:0}tbody tr:hover{background:#15263a}.mono{font-family:Consolas,monospace}.mini-input{padding:6px 8px;border-radius:7px;min-width:72px}.tag{font-size:10px;padding:2px 6px;border-radius:5px;background:#25405b}.tag.gold{background:#493c1d;color:#ffd479}.tag.blue{background:#183e60;color:#84d5ff}.muted{color:var(--muted)}.right{text-align:right}.danger-text{color:#ff8797}
 .skills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.skill{border:1px solid var(--line);border-radius:12px;padding:12px;background:#0e1b29}.skill .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.skill .top>div{min-width:0;overflow-wrap:anywhere}.skill .top>.pill{flex:none}.skill .edit .btn{flex:none;white-space:nowrap}.bar{height:7px;background:#08111b;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,#32c9a3,#43a9ff)}.skill .edit{display:flex;gap:8px;margin-top:10px;align-items:center}.skill input{min-width:0;padding:7px 9px}.fish-table td{white-space:normal}.switch{appearance:none;width:38px;height:21px;border-radius:20px;background:#26394d;position:relative;cursor:pointer;border:1px solid #38506a;padding:0}.switch:after{content:"";position:absolute;width:15px;height:15px;border-radius:50%;background:#91a6ba;top:2px;left:2px;transition:.18s}.switch:checked{background:#1b725a}.switch:checked:after{left:19px;background:#b9ffe9}
 .modal-bg{position:fixed;inset:0;background:#02070dcc;backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.modal-bg.on{display:flex}.modal{background:#101d2b;border:1px solid #2a465f;border-radius:18px;box-shadow:0 28px 90px #000c;width:min(760px,96vw);max-height:90vh;overflow:auto;padding:20px}.modal h3{margin:0 0 4px}.modal .sub{color:var(--muted);font-size:12px;margin-bottom:16px}.results{margin-top:9px;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px}.result{padding:9px 11px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;cursor:pointer}.result:hover{background:#172b40}.result:last-child{border:0}.attach-row{display:grid;grid-template-columns:1fr 90px 38px;gap:8px;margin-bottom:8px}.mail-box{display:grid;grid-template-columns:1fr 340px;gap:16px}.log{max-height:250px;overflow:auto;font:12px/1.6 Consolas,monospace;background:#08121d;border-radius:10px;padding:12px;color:#a9bed3}
+.cp-param-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-param-grid .field{min-width:0}.cp-param-grid label{overflow-wrap:anywhere}.cp-param-grid .mono{overflow-wrap:anywhere}
 .toast{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:8px;z-index:80}.toast div{padding:11px 14px;border-radius:11px;background:#17364b;border:1px solid #2d6680;box-shadow:var(--shadow);animation:in .2s ease}@keyframes in{from{opacity:0;transform:translateX(15px)}to{opacity:1;transform:none}}.toast .bad{background:#481f2a;border-color:#7a3443}.toast .ok{background:#143b31;border-color:#286a58}
 #login{min-height:100vh;display:grid;place-items:center;padding:20px}.login-card{width:min(390px,95vw);padding:28px;background:linear-gradient(160deg,#132539,#0b1521);border:1px solid #2a455f;border-radius:22px;box-shadow:0 30px 90px #000b}.login-card .logo{width:58px;height:58px;margin-bottom:18px}.login-card h1{font-size:23px;margin:0 0 4px}.login-card p{color:var(--muted);margin:0 0 20px}.login-card .field{margin-bottom:12px}
 .notice{position:fixed;left:0;right:0;top:0;z-index:95;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 54px 12px 20px;background:linear-gradient(90deg,#ff9f1c,#ff4d6d 45%,#c026d3);color:#fff;font-weight:800;font-size:15px;letter-spacing:.02em;text-shadow:0 1px 2px #0006;box-shadow:0 10px 30px #0007;animation:noticeIn .35s ease}.notice[hidden]{display:none}.notice .pulse{width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:#fff;box-shadow:0 0 0 0 #ffffff99;animation:pulse 1.6s infinite}.notice .msg{max-width:min(1100px,84vw);text-align:center;line-height:1.5}.notice .msg b{color:#fff45c;font-size:16px}.notice .close{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1px solid #ffffff66;background:#00000026;color:#fff;font-size:15px;line-height:1;display:grid;place-items:center;padding:0}.notice .close:hover{background:#00000055}@keyframes noticeIn{from{transform:translateY(-100%)}to{transform:none}}@keyframes pulse{0%{box-shadow:0 0 0 0 #ffffff99}70%{box-shadow:0 0 0 12px #ffffff00}100%{box-shadow:0 0 0 0 #ffffff00}}body.notice-on{padding-top:56px}
@@ -25,6 +26,7 @@ button,input,select,textarea{font:inherit;color:var(--text)}button{cursor:pointe
 .main,.card,.view,.sidebar,.nav{min-width:0}.nav{max-width:100%}.player-hero{flex-wrap:wrap}.player-hero>div,.player-row>div{min-width:0;max-width:100%}.player-hero h2,.player-row .n{overflow-wrap:anywhere}
 
 @media(max-width:720px){.shell{grid-template-columns:minmax(0,1fr);width:100%;overflow-x:hidden}.field.span2{grid-column:auto}.toolbar .grow{min-width:100px}.player-hero .actions,.tabs{flex-wrap:wrap}.tabs button{flex:0 0 auto;white-space:nowrap}.nav button{flex:0 0 auto}}
+@media(max-width:720px){.cp-param-grid{grid-template-columns:minmax(0,1fr)}}
 
 /* 鱼群规则：单行紧凑开关条（说明默认收起、点「说明」展开），把视口高度让给下方的水域/鱼种列表 */
 #fishRulesCard{padding:12px 16px}
@@ -210,6 +212,12 @@ body.notice-on #view-fish.on{height:max(600px,calc(100vh - 204px))}
 #baitTable .bait-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 #baitTable .bait-edit{flex:none}
 .event-gift-editor{border:0;padding:0;margin:0;min-width:0}.event-gift-editor:disabled{opacity:.5}.event-gift-editor :disabled{cursor:not-allowed}.event-gift-status{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#0c1927;color:var(--muted);font-size:12px;line-height:1.6}
+.catalog-product{display:flex;align-items:center;gap:9px;min-width:0}.catalog-product>div{min-width:0}.catalog-thumb{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;overflow:hidden;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--muted);font-size:11px}.catalog-thumb img{display:block;width:100%;height:100%;object-fit:contain}.catalog-thumb.missing{background:var(--panel);font-size:10px}.fish-thumb{width:52px;height:52px;flex-basis:52px}.catalog-product .mono{overflow-wrap:anywhere}.result .catalog-product{flex:1}
+#lsStoreOptions{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;min-width:0}
+#lsStoreOptions label{display:grid;grid-template-columns:16px minmax(0,1fr);align-items:start;gap:8px;min-width:0;padding:5px;border-radius:6px;cursor:pointer;overflow-wrap:anywhere}
+#lsStoreOptions label:hover{background:#14273b}
+#lsStoreOptions input[type=checkbox]{width:16px;height:16px;min-width:16px;margin:2px 0 0;padding:0;accent-color:#37d6aa}
+@media(max-width:560px){#lsStoreOptions{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:720px){.event-gift-item{grid-template-columns:minmax(0,1fr) auto}.event-gift-item .picked{grid-column:1/-1;flex-direction:column;align-items:flex-start;gap:3px}.event-gift-item .picked b,.event-gift-item .picked span{max-width:100%}}
 </style>
 </head>
@@ -256,8 +264,8 @@ body.notice-on #view-fish.on{height:max(600px,calc(100vh - 204px))}
         <div class="card"><div class="section-head"><h2>玩法开关</h2><button class="btn alt sm" onclick="go('fish')">去调整</button></div><div id="ruleOverview"><div class="empty">读取中…</div></div></div>
       </div>
     </section>
-    <section class="view" id="view-players"><div class="split"><div class="card player-list"><div class="toolbar"><input class="grow" id="playerSearch" placeholder="搜索 UID / 昵称" onkeydown="if(event.key==='Enter')loadPlayers()"><button class="btn sm" onclick="loadPlayers()">搜索</button><span class="legend"><span class="online-dot on"></span>在线<span class="online-dot off"></span>不在线</span></div><div id="playerList" style="margin-top:12px"></div></div><div class="card" id="playerDetail"><div class="empty">选择左侧玩家开始管理</div></div></div></section>
-    <section class="view" id="view-stores"><div class="card"><div class="toolbar"><select id="storeSelect" class="grow" onchange="loadStoreItems()"></select><input id="storeSearch" placeholder="搜索商品 / 名称" onkeydown="if(event.key==='Enter')loadStoreItems()"><button class="btn" onclick="loadStoreItems()">查询</button></div><div id="storeSummary" class="muted" style="margin:12px 0"></div><div class="table-wrap" id="storeTable"></div></div></section>
+    <section class="view" id="view-players"><div class="split"><div class="card player-list"><div class="toolbar"><input class="grow" id="playerSearch" placeholder="搜索 UID / 昵称" onkeydown="if(event.key==='Enter')loadPlayers()"><button class="btn sm" onclick="loadPlayers()">搜索</button><button class="btn alt sm" onclick="openCreatePlayer()">＋ 新建玩家</button><span class="legend"><span class="online-dot on"></span>在线<span class="online-dot off"></span>不在线</span></div><div id="playerList" style="margin-top:12px"></div></div><div class="card" id="playerDetail"><div class="empty">选择左侧玩家开始管理</div></div></div></section>
+    <section class="view" id="view-stores"><div class="card"><div class="toolbar"><select id="storeSelect" class="grow" onchange="$('#storeCategory').value='';loadStoreItems()"></select><select id="storeCategory" aria-label="商品类别" onchange="loadStoreItems()"><option value="">全部类别</option></select><input id="storeSearch" placeholder="搜索商品 / 名称" onkeydown="if(event.key==='Enter')loadStoreItems()"><button class="btn" onclick="loadStoreItems()">查询</button><button class="btn alt" onclick="openStoreProduct()">按商品统一更新</button><button class="btn alt" onclick="openStoreListing()">＋ 上架新商品</button><button class="btn alt" onclick="openCustomProduct()">＋ 定制商品</button></div><div id="storeSummary" class="muted" style="margin:12px 0"></div><div class="table-wrap" id="storeTable"></div></div></section>
     <section class="view" id="view-fish"><div class="card" id="fishRulesCard" style="margin-bottom:12px"><div class="rules-strip"><h2>鱼口模式</h2><span id="biteModeInline" style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap"><span id="biteModeBody">读取中…</span></span><small class="muted" id="biteModeStatus"></small></div><div class="rules-strip" style="margin-top:8px"><label class="rule-item"><span>硬性鱼口约束</span><input type="checkbox" class="switch" id="biteGateSwitch" disabled onchange="toggleFishRules('gate',this)"></label><label class="rule-item"><span>逐鱼种生态</span><input type="checkbox" class="switch" id="fishEcologySwitch" disabled onchange="toggleFishRules('ecology',this)"></label><label class="rule-item"><span>鱼群随机分布</span><input type="checkbox" class="switch" id="fishDistributionSwitch" disabled onchange="toggleFishRules('distribution',this)"></label><label class="rule-item"><span>鱼类吃饵偏好</span><input type="checkbox" class="switch" id="fishRulesSwitch" disabled onchange="toggleFishRules('bait',this)"></label><label class="rule-item"><span>天气与温度鱼口</span><input type="checkbox" class="switch" id="fishWeatherSwitch" disabled onchange="toggleFishRules('weather',this)"></label><label class="rule-item"><span>欢乐时光</span><input type="checkbox" class="switch" id="happyHourSwitch" disabled onchange="toggleFishRules('happy',this)"></label><small class="muted" id="rulesStatus"></small><button class="btn alt sm" id="rulesHelpBtn" aria-expanded="false" onclick="toggleRulesHelp()">说明 ⌄</button></div><div id="rulesHelp" hidden><p class="muted" style="margin:0 0 8px">各项独立保存；硬性约束、生态、天气、饵料和分布规则默认关闭，欢乐时光默认开启。上方「鱼口模式」一键切换五项组合。</p><div class="rule-help"><b>硬性鱼口约束</b><span id="biteGateMessage" role="status">正在读取开关。</span></div><div class="rule-help"><b>逐鱼种生态</b><span id="fishEcologyMessage" role="status">正在读取开关。</span></div><div class="rule-help"><b>鱼群随机分布</b><span id="fishDistributionMessage" role="status">正在读取开关。</span></div><div class="rule-help"><b>鱼类吃饵偏好</b><span id="fishRulesMessage" role="status">正在读取开关。</span></div><div class="rule-help"><b>天气与温度鱼口</b><span id="fishWeatherMessage" role="status">正在读取开关。</span></div><div class="rule-help"><b>欢乐时光</b><span id="happyHourMessage" role="status">正在读取开关。</span></div></div></div><div class="grid fish-layout" style="grid-template-columns:270px minmax(0,1fr)"><div class="card"><div class="section-head"><h2>水域</h2></div><input id="fishSearch" placeholder="筛选水域" oninput="renderFishAreas()"><div id="fishAreas"></div></div><div class="card" id="fishEditor"><div class="empty">选择水域配置鱼口</div></div></div></section>
     <section class="view" id="view-hooks"><div class="card"><div class="section-head"><div><h2>真实钩子型号档案</h2><small>物理数据来自 item_def；倍率和兜底值只影响咬口，不改钩子拉力</small></div></div><div class="toolbar"><input class="grow" id="hookSearch" placeholder="搜索 item_id / 厂牌，如 triple_20686、simmons" onkeydown="if(event.key==='Enter')loadHookProfiles()"><select id="hookSize"><option value="">全部尺寸</option></select><select id="hookFamily"><option value="">全部钩型族</option><option value="classic">Classic</option><option value="carp">Carp</option><option value="treble">Treble</option><option value="jighead">Jighead</option><option value="offset">Offset</option><option value="marine">Marine</option><option value="other">Other</option></select><button class="btn" onclick="loadHookProfiles()">查询</button></div><p class="muted" style="margin:10px 0">默认倍率 1.0、兜底值 0；修改后写入审计，最多 30 秒由主服热加载。入口容量按真实钩体长度计算。</p><div class="table-wrap" id="hookProfilesTable"><div class="empty">读取中…</div></div></div></section>
     <section class="view" id="view-bait"><div class="card"><div class="section-head"><div><h2>鱼饵偏好</h2><small id="baitSummary" class="muted">正在读取…</small></div></div><div class="toolbar"><input class="grow" id="baitSearch" placeholder="搜索鱼种 key / 中文名，如 pike、狗鱼" onkeydown="if(event.key==='Enter')loadBaitPrefs()"><input id="baitLoc" placeholder="水域（可选）" onkeydown="if(event.key==='Enter')loadBaitPrefs()"><select id="baitFilter" onchange="loadBaitPrefs()"><option value="">全部鱼种</option><option value="tier3">有 tier3 饵</option><option value="norule">规则表无条目</option><option value="rule">规则表有条目</option></select><button class="btn" onclick="loadBaitPrefs()">查询</button></div><p class="muted" style="margin:10px 0">规则来自编译进服务端的 fishing_bait_rules.txt（严格模式生效）；tier 来自 companion_bait_fish 实证（tier3 权重×8 / tier2 ×4 / 在列 ×2）；「证据」是实证条数。点击行展开全部饵；点右侧「编辑」可改吃/不吃/底钓只吃并配置多组轮换。</p><div class="table-wrap" id="baitTable"></div></div></section>
@@ -805,8 +813,16 @@ let BR_CATS=null;       // 分类树缓存
 let BR_SEQ=0;           // 搜索结果防抖
 const BR_WILDCARD=['各类饵','拟饵','活饵类','饵鱼类'];
 
-function editBaitRule(key){
-  const r=BAIT_ROWS.find(x=>x.fish_key===key);
+async function editFishBaitRule(key,name){
+  try{await ensureBaitMap();editBaitRule(key,name)}
+  catch(e){toast('读取鱼饵规则失败：'+e.message,'bad')}
+}
+function editBaitRule(key,nameHint=''){
+  const fish=FISH_CFG?.fish.find(x=>x.fish_key===key);
+  const r=BAIT_ROWS.find(x=>x.fish_key===key)||BAIT_MAP?.[key]||(nameHint||fish?{
+    fish_key:key,name_zh:nameHint||fish?.name_zh||key,source:'default',enabled:true,
+    allow:[],deny:[],bottom_only:[],groups:[],rotate_sec:0,rotate_mode:'soft',condition:''
+  }:null);
   if(!r){toast('找不到该鱼种','bad');return}
   BR={key:r.fish_key,name:r.name_zh,
       allow:(r.allow||[]).slice(),deny:(r.deny||[]).slice(),bottom:(r.bottom_only||[]).slice(),
@@ -956,8 +972,9 @@ async function saveBaitRule(){
     BR_INIT=brSnapshot();               // 已保存，关闭时不再弹"未保存"确认
     // 鱼饵偏好页改了规则/轮换，钓场鱼口页的饵料列必须跟着更新。
     invalidateBaitMap();
-    closeModal(true);toast('已保存，最多 30 秒生效');await loadBaitPrefs();
-    if(VIEW==='fish')refreshCurrent();   // 正停在钓场页时立刻重绘，无需手动切换
+    closeModal(true);toast('已保存，最多 30 秒生效');
+    try{if(VIEW==='fish')await refreshFishBaitSummary();else await loadBaitPrefs()}
+    catch(e){toast('规则已保存，但刷新展示失败：'+e.message,'bad')}
   }catch(e){brShowErr('保存失败：'+e.message)}
 }
 function resetBaitRule(name){
@@ -965,8 +982,9 @@ function resetBaitRule(name){
     try{
       await api('/api/bait/rules/reset',{method:'POST',body:JSON.stringify({fish_zh:name})});
       invalidateBaitMap();
-      closeModal(true);toast('已恢复默认');await loadBaitPrefs();
-      if(VIEW==='fish')refreshCurrent();
+      closeModal(true);toast('已恢复默认');
+      try{if(VIEW==='fish')await refreshFishBaitSummary();else await loadBaitPrefs()}
+      catch(e){toast('规则已恢复，但刷新展示失败：'+e.message,'bad')}
     }catch(e){toast(e.message,'bad')}
   });
 }
@@ -1332,6 +1350,36 @@ async function loadPlayers(keep=false){
 async function selectPlayer(uid){
   try{PLAYER=await api('/api/players/detail?uid='+uid);PLAYER_TAB='profile';ITEM_FILTER='';renderPlayerDetail();await loadPlayers(true)}catch(e){toast(e.message,'bad')}
 }
+// 新建玩家：UID 留空自动取最大 UID+1；其余留空走新档默认值（player · Lv.1 · 银币 5000）。
+function openCreatePlayer(){
+  showModal('新建玩家','UID 留空自动分配；会员等更多字段创建后可在档案页继续修改',
+  `<div class="form-grid">
+    <div class="field"><label>UID（留空自动）</label><input id="np_uid" type="number" min="1" placeholder="自动分配"></div>
+    <div class="field"><label>昵称</label><input id="np_name" placeholder="player"></div>
+    <div class="field"><label>邮箱（可选）</label><input id="np_email"></div>
+    <div class="field"><label>等级</label><input id="np_level" type="number" min="1" placeholder="1"></div>
+    <div class="field"><label>经验</label><input id="np_xp" type="number" min="0" placeholder="0"></div>
+    <div class="field"><label>银币</label><input id="np_silver" type="number" min="0" placeholder="5000"></div>
+    <div class="field"><label>金币</label><input id="np_gold" type="number" min="0" placeholder="0"></div>
+    <div class="field"><label>银行存款</label><input id="np_bank" type="number" min="0" placeholder="0"></div>
+  </div>
+  <p class="muted" style="white-space:normal;margin:12px 0 0">新建玩家不会自动登录：本机客户端固定使用 UID 1000001，局域网设备按来源 IP 依次分配后续 UID。想让本机改用新档案时，把 config.yaml 的 gateway.userid_start 改成该 UID 并重启网关。</p>
+  <div class="actions" style="justify-content:flex-end;margin-top:14px"><button class="btn alt" onclick="closeModal()">取消</button><button class="btn good" onclick="submitCreatePlayer()">创建玩家</button></div>`);
+}
+async function submitCreatePlayer(){
+  const num=id=>{const v=$('#'+id).value.trim();return v===''?null:Number(v)};
+  const body={};
+  const uid=num('np_uid');if(uid!=null&&uid>0)body.uid=uid;
+  const name=$('#np_name').value.trim();if(name)body.name=name;
+  const email=$('#np_email').value.trim();if(email)body.email=email;
+  const map={level:'np_level',xp:'np_xp',silver:'np_silver',gold:'np_gold',bank:'np_bank'};
+  for(const k in map){const v=num(map[k]);if(v!=null)body[k]=v}
+  try{
+    const r=await api('/api/players/create',{method:'POST',body:JSON.stringify(body)});
+    closeModal();toast('已创建玩家 UID '+r.uid+'，见审计日志');
+    $('#playerSearch').value='';await loadPlayers(true);await selectPlayer(r.uid);
+  }catch(e){toast(e.message,'bad')}
+}
 function renderPlayerDetail(){
   if(!PLAYER)return;
   const p=PLAYER;
@@ -1355,13 +1403,20 @@ function renderPlayerTab(){
       <div class="field"><label>银行（分）</label><input id="pf_bank" type="number" value="${p.bank}"></div>
       <div class="field"><label>会员</label><select id="pf_membership"><option value="0" ${p.membership? '':'selected'}>普通</option><option value="1" ${p.membership===1? 'selected':''}>限时高级会员</option><option value="2" ${p.membership===2? 'selected':''}>永久会员</option></select></div>
       <div class="field span2"><label>会员到期</label><input id="pf_membership_exp" type="datetime-local" value="${localInput(p.membership_exp)}"></div>
-    </div><p class="muted" id="playerHappyHour">${happyHourText(p.happy_hour)}</p><div class="actions"><button class="btn good" onclick="saveProfile()">保存档案与货币</button><button class="btn alt" onclick="selectPlayer(${p.uid})">放弃修改</button></div>`;
+      <div class="field span2"><label>个人中心账号</label><input id="pf_portal_username" value="${esc(p.portal_account?.username||'')}" autocomplete="off" placeholder="未设置"></div>
+      <div class="field span2"><label>设置 / 重置密码</label><input id="pf_portal_password" type="password" minlength="10" maxlength="72" autocomplete="new-password" placeholder="至少 10 个字符"></div>
+    </div><p class="muted">设置账号后，玩家可用账号密码登录个人中心。同一账号只能绑定一个玩家。</p><div class="actions"><button class="btn good" onclick="savePortalAccount()">保存个人中心账号</button></div><p class="muted" id="playerHappyHour">${happyHourText(p.happy_hour)}</p><div class="actions"><button class="btn good" onclick="saveProfile()">保存档案与货币</button><button class="btn alt" onclick="selectPlayer(${p.uid})">放弃修改</button></div>`;
   }
   if(PLAYER_TAB==='items')renderItems();
   if(PLAYER_TAB==='keepnet')renderKeepnet();
   if(PLAYER_TAB==='records')renderRecords();
   if(PLAYER_TAB==='skills')renderSkills();
   if(PLAYER_TAB==='mail')renderPlayerMail();
+}
+async function savePortalAccount(){
+  const username=$('#pf_portal_username').value.trim(),password=$('#pf_portal_password').value;
+  if(username.length<3||username.length>32||password.length<10||password.length>72){toast('账号需 3 至 32 个字符，密码需 10 至 72 个字符','bad');return}
+  try{await api('/api/players/account',{method:'POST',body:JSON.stringify({uid:PLAYER.uid,username,password})});toast('个人中心账号已保存，旧会话已失效');await selectPlayer(PLAYER.uid)}catch(e){toast(e.message,'bad')}
 }
 let RECORDS=null,RECORD_CHANGES=new Map(),RECORD_LEVEL='',RECORD_SEARCH='',RECORD_LOADING=0;
 const recordGrade=g=>['未钓获','已钓获','达标','★ 星','♛ 蓝冠'][g]||'未钓获';
@@ -1432,7 +1487,7 @@ function renderItems(){
 }
 function renderItemRows(){
   const q=ITEM_FILTER.toLowerCase();const rows=(PLAYER.items||[]).filter(x=>!q||`${x.item_id} ${x.name} ${x.guid}`.toLowerCase().includes(q));
-  $('#itemRows').innerHTML=rows.map(x=>`<tr><td><div class="item-cell"><img class="item-icon" src="icons/items/${encodeURIComponent(String(x.item_id||'').toLowerCase())}.webp" onerror="this.style.display='none'"><div><b>${esc(x.name||x.item_id)}</b><div class="muted mono">${esc(x.item_id)}</div></div></div></td><td>${x.category}</td><td>${esc(x.container)}</td><td>${x.qty}</td><td>${Number(x.durability).toFixed(4)}</td><td class="mono muted">${esc(x.guid.slice(0,12))}…</td><td class="right"><button class="btn bad sm" data-guid="${esc(x.guid)}" onclick="deletePlayerItem(this.dataset.guid)">删除</button></td></tr>`).join('')||`<tr><td colspan="7" class="empty">没有物品${GRANT_ITEM_UI_ENABLED?'，点上方「+ 发放物品」添加':''}</td></tr>`;
+  $('#itemRows').innerHTML=rows.map(x=>`<tr><td><b>${esc(x.name||x.item_id)}</b><div class="muted mono">${esc(x.item_id)}</div></td><td>${x.category}</td><td>${esc(x.container)}</td><td>${x.qty}</td><td>${Number(x.durability).toFixed(4)}</td><td class="mono muted">${esc(x.guid.slice(0,12))}…</td><td class="right"><button class="btn bad sm" data-guid="${esc(x.guid)}" onclick="deletePlayerItem(this.dataset.guid)">删除</button></td></tr>`).join('')||`<tr><td colspan="7" class="empty">没有物品${GRANT_ITEM_UI_ENABLED?'，点上方「+ 发放物品」添加':''}</td></tr>`;
 }
 async function deletePlayerItem(guid){
   askConfirm('删除物品','把这件物品从该玩家的背包/装备中删除，不可恢复。',async()=>{
@@ -1496,20 +1551,192 @@ async function loadStores(){
 }
 async function loadStoreItems(){
   const id=$('#storeSelect').value;if(!id)return;
-  const q=$('#storeSearch').value.trim();STORE_ITEMS=await api('/api/stores/items?store_id='+encodeURIComponent(id)+'&q='+encodeURIComponent(q)+'&limit=1000');
+  const q=$('#storeSearch').value.trim(),category=$('#storeCategory').value;
+  const params=new URLSearchParams({store_id:id,q,limit:'2000'});if(category)params.set('category',category);
+  STORE_ITEMS=await api('/api/stores/items?'+params);
+  if(!category&&!q){const select=$('#storeCategory'),old=select.value,values=[...new Set(STORE_ITEMS.map(x=>String(x.category)))].sort((a,b)=>Number(a)-Number(b));select.innerHTML='<option value="">全部类别</option>'+values.map(v=>`<option value="${v}">类别 ${v}</option>`).join('');if(values.includes(old))select.value=old;}
   const over=STORE_ITEMS.filter(x=>x.has_override).length,stock=STORE_ITEMS.reduce((n,x)=>n+Number(x.stock||0),0);
   $('#storeSummary').textContent=`${id} · 当前返回 ${STORE_ITEMS.length} 件 · 总库存 ${fmt(stock)} · 已覆盖 ${over} 件 · 自动补货：库存为 0 时补至 1000`;
   renderStoreTable();
 }
 function renderStoreTable(){
-  $('#storeTable').innerHTML=`<table><thead><tr><th>商品</th><th>类别</th><th>原价 / 原库存</th><th>有效银价</th><th>有效金币</th><th>有效库存</th><th></th></tr></thead><tbody>${STORE_ITEMS.map((x,i)=>`<tr><td><b>${esc(x.name||x.item_id)}</b><div class="muted mono">${esc(x.item_id)}</div></td><td>${x.category}</td><td class="muted">${fmt(x.base_silver)} / ${fmt(x.base_gold)} / ${fmt(x.base_stock)}</td><td><input class="mini-input" id="ss_${i}" type="number" min="0" value="${x.silver}"></td><td><input class="mini-input" id="sg_${i}" type="number" min="0" value="${x.gold}"></td><td><input class="mini-input" id="st_${i}" type="number" min="0" value="${x.stock}"></td><td class="right"><button class="btn sm ${x.has_override?'good':''}" onclick="saveStoreRow(${i})">${x.has_override?'更新覆盖':'保存'}</button>${x.has_override?` <button class="btn alt sm" onclick="resetStoreRow(${i})">恢复默认</button>`:''}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">该商店没有货架商品</td></tr>'}</tbody></table>`;
+    $('#storeTable').innerHTML=`<table><thead><tr><th>商品</th><th>类别</th><th>原价 / 原库存</th><th>有效银价</th><th>有效金币</th><th>有效库存</th><th></th></tr></thead><tbody>${STORE_ITEMS.map((x,i)=>`<tr><td><div class="catalog-product"><span class="catalog-thumb"><img src="${webURL('catalog-media/items/'+encodeURIComponent(x.item_id)+'.webp')}" alt="" loading="lazy" onerror="const p=this.parentNode;this.remove();p.classList.add('missing');p.textContent='暂无'"></span><div><b>${esc(x.name||x.item_id)}</b>${x.listed?' <span class="tag blue">上架</span>':''}<div class="muted mono">${esc(x.item_id)}</div></div></div></td><td>${x.category}</td><td class="muted">${fmt(x.base_silver)} / ${fmt(x.base_gold)} / ${fmt(x.base_stock)}</td><td><input class="mini-input" id="ss_${i}" type="number" min="0" value="${x.silver}"></td><td><input class="mini-input" id="sg_${i}" type="number" min="0" value="${x.gold}"></td><td><input class="mini-input" id="st_${i}" type="number" min="0" value="${x.stock}"></td><td class="right"><button class="btn sm ${x.has_override?'good':''}" onclick="saveStoreRow(${i})">${x.has_override?'更新覆盖':'保存'}</button> <button class="btn alt sm" onclick="openStoreProduct(${i})">全店更新</button>${x.item_id.startsWith('custom_')?` <button class="btn alt sm" onclick="openCustomProduct(STORE_ITEMS[${i}].item_id)">编辑属性</button>`:''}${x.has_override?` <button class="btn alt sm" onclick="resetStoreRow(${i})">${x.listed?'下架':'恢复默认'}</button>`:''}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">该商店没有货架商品</td></tr>'}</tbody></table>`;
+}
+let BULK_PRODUCT=null,BULK_REQUEST=0;
+function openStoreProduct(rowIndex){
+  BULK_PRODUCT=null;BULK_REQUEST++;
+  showModal('按商品统一更新','',
+  `<div class="toolbar"><select id="spCategory" aria-label="商品类别" onchange="searchStoreProducts()"><option value="">全部类别</option></select><input class="grow" id="spSearch" placeholder="搜索商品名称 / ID" oninput="debounce('sp',searchStoreProducts,240)"></div>
+   <div class="results" id="spResults"></div><div id="spEditor" hidden>
+   <p id="spSummary" style="overflow-wrap:anywhere"></p>
+   <div class="table-wrap" style="max-height:240px;overflow:auto"><table><thead><tr><th>商店 / 地图</th><th>银价</th><th>金币价</th><th>库存</th></tr></thead><tbody id="spStores"></tbody></table></div>
+   <div class="form-grid" style="margin-top:12px">
+    <div class="field"><label>统一银价（分）</label><input id="spSilver" type="number" min="0" step="1"></div>
+    <div class="field"><label>统一金币价（分）</label><input id="spGold" type="number" min="0" step="1"></div>
+    <div class="field"><label>统一库存</label><input id="spStock" type="number" min="0" step="1"></div></div>
+   <div class="actions" style="justify-content:flex-end;margin-top:14px"><button class="btn alt" onclick="closeModal()">取消</button><button class="btn good" id="spSubmit" onclick="submitStoreProduct()">更新全部商店</button></div></div>`);
+  api('/api/catalog/groups?complete_only=1').then(groups=>{if($('#spCategory'))$('#spCategory').innerHTML='<option value="">全部类别</option>'+groups.map(g=>`<option value="${esc(g.key)}">${esc(g.name)} · ${g.count}</option>`).join('')}).catch(e=>toast(e.message,'bad'));
+  if(Number.isInteger(rowIndex)){const x=STORE_ITEMS[rowIndex];pickStoreProduct(x.item_id,x.name)}
+}
+async function searchStoreProducts(){
+  const q=$('#spSearch')?.value.trim(),group=$('#spCategory')?.value;
+  if(!q&&!group){$('#spResults').innerHTML='';return}
+  const request=++BULK_REQUEST;
+  try{
+    const params=new URLSearchParams({complete_only:'1',q,limit:'30'});if(group)params.set('group',group);
+    const rows=await api('/api/catalog/items?'+params);
+    if(request!==BULK_REQUEST||!$('#spResults'))return;
+    $('#spResults').innerHTML=rows.map(x=>`<div class="result" data-id="${esc(x.item_id)}" data-name="${esc(x.name||x.item_id)}" onclick="pickStoreProduct(this.dataset.id,this.dataset.name)"><span><b>${esc(x.name||x.item_id)}</b><br><span class="muted mono">${esc(x.item_id)}</span></span><span class="pill ok">选择</span></div>`).join('')||'<div class="empty">没有匹配商品</div>';
+  }catch(e){toast(e.message,'bad')}
+}
+async function pickStoreProduct(itemID,name){
+  const request=++BULK_REQUEST;BULK_PRODUCT=null;
+  $('#spEditor').hidden=true;
+  try{
+    const stores=await api('/api/stores/product?'+new URLSearchParams({item_id:itemID}));
+    if(request!==BULK_REQUEST||!$('#spEditor'))return;
+    BULK_PRODUCT=itemID;
+    $('#spSummary').textContent=`${name||itemID} · ${itemID} · 正在 ${stores.length} 家商店售卖`;
+    $('#spStores').innerHTML=stores.map(s=>`<tr><td style="white-space:normal;overflow-wrap:anywhere">${esc(s.store_id)}<div class="muted">${esc(s.map_key||'')}</div></td><td>${fmt(s.silver)}</td><td>${fmt(s.gold)}</td><td>${fmt(s.stock)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">没有正在售卖该商品的商店</td></tr>';
+    for(const [id,key] of [['spSilver','silver'],['spGold','gold'],['spStock','stock']]){const values=[...new Set(stores.map(s=>s[key]))];$('#'+id).value=values.length===1?values[0]:'';$('#'+id).placeholder=values.length>1?'各店不同，请填写':''}
+    $('#spSubmit').disabled=!stores.length;$('#spSubmit').textContent=`更新全部 ${stores.length} 家商店`;
+    $('#spEditor').hidden=false;
+  }catch(e){toast(e.message,'bad')}
+}
+async function submitStoreProduct(){
+  if(!BULK_PRODUCT)return;
+  const body={item_id:BULK_PRODUCT};
+  for(const [id,key] of [['spSilver','silver'],['spGold','gold'],['spStock','stock']]){const raw=$('#'+id).value.trim(),value=Number(raw);if(raw===''||!Number.isSafeInteger(value)||value<0){toast('请填写非负整数价格和库存','bad');return}body[key]=value}
+  const button=$('#spSubmit');button.disabled=true;
+  try{const result=await api('/api/stores/product/update',{method:'POST',body:JSON.stringify(body)});closeModal();toast(`已统一更新 ${result.store_count} 家商店：${body.item_id}`);await loadStoreItems()}
+  catch(e){toast(e.message,'bad')}
+  finally{if($('#spSubmit'))$('#spSubmit').disabled=false}
 }
 async function saveStoreRow(i){
   const x=STORE_ITEMS[i];const body={store_id:x.store_id,item_id:x.item_id,silver:+$('#ss_'+i).value,gold:+$('#sg_'+i).value,stock:+$('#st_'+i).value};
   await api('/api/stores/items/update',{method:'POST',body:JSON.stringify(body)});toast('已保存并立即生效：'+x.item_id);await loadStoreItems();
 }
 async function resetStoreRow(i){
-  const x=STORE_ITEMS[i];askConfirm('恢复默认货架','「'+(x.name||x.item_id)+'」的价格与库存将回到基础目录值。',async()=>{await api('/api/stores/items/reset',{method:'POST',body:JSON.stringify({store_id:x.store_id,item_id:x.item_id})});toast('已恢复默认货架：'+x.item_id+'，见审计日志');await loadStoreItems()});
+  const x=STORE_ITEMS[i];
+  if(x.listed){askConfirm('下架商品','「'+(x.name||x.item_id)+'」是后台上架的商品，删除覆盖后会从该店货架移除。',async()=>{await api('/api/stores/items/reset',{method:'POST',body:JSON.stringify({store_id:x.store_id,item_id:x.item_id})});toast('已下架：'+x.item_id+'，见审计日志');await loadStoreItems()});return}
+  askConfirm('恢复默认货架','「'+(x.name||x.item_id)+'」的价格与库存将回到基础目录值。',async()=>{await api('/api/stores/items/reset',{method:'POST',body:JSON.stringify({store_id:x.store_id,item_id:x.item_id})});toast('已恢复默认货架：'+x.item_id+'，见审计日志');await loadStoreItems()});
+}
+// 上架新商品：从完整商品目录挑一件挂到当前商店，价格库存即改即生效。
+let LISTING_PICK=null;
+function openStoreListing(prefillItem=''){
+  const storeId=$('#storeSelect')?.value;
+  if(!storeId){toast('请先选择商店','bad');return}
+  LISTING_PICK=null;
+  showModal('上架新商品 · '+esc(storeId),'从完整商品目录选择商品；两个价格都留空时按全局价目自动补价，库存留空按 1000 持续供货',
+  `<div class="toolbar"><b>上架商店</b><button class="btn alt sm" onclick="toggleListingStores()">全选 / 清空</button><span class="muted" id="lsStoreCount">读取中</span></div>
+   <div id="lsStoreOptions" style="display:grid;gap:5px 12px;max-height:140px;overflow:auto;border:1px solid var(--line);padding:8px;margin-bottom:10px"></div>
+   <div class="toolbar"><select id="lsCategory" aria-label="商品类别" onchange="searchListingItems()"><option value="">全部类别</option></select><input class="grow" id="lsSearch" placeholder="搜索商品名称 / ID，输入即搜索" oninput="debounce('ls',searchListingItems,240)"></div>
+   <div class="results" id="lsResults"><div class="empty">输入关键字搜索商品目录</div></div>
+   <div class="form-grid" id="lsForm" style="display:none;margin-top:12px">
+     <div class="field"><label>银价（分，留空自动）</label><input id="ls_silver" type="number" min="0" placeholder="自动"></div>
+     <div class="field"><label>金币价（分，留空自动）</label><input id="ls_gold" type="number" min="0" placeholder="自动"></div>
+     <div class="field"><label>库存（留空=1000）</label><input id="ls_stock" type="number" min="0" placeholder="1000"></div>
+   </div>
+   <p class="muted" style="white-space:normal;margin:12px 0 0">已选商品：<b id="lsPicked">未选择</b>。可继续搜索重新选择。</p>
+   <div class="actions" style="justify-content:flex-end;margin-top:14px"><button class="btn alt" onclick="closeModal()">取消</button><button class="btn good" id="lsSubmit" disabled onclick="submitStoreListing()">确认上架</button></div>`);
+  api('/api/stores').then(stores=>{
+    if(!$('#lsStoreOptions'))return;
+    $('#lsStoreOptions').innerHTML=stores.map(s=>`<label><input type="checkbox" name="lsStore" value="${esc(s.store_id)}" onchange="updateListingStoreCount()" ${s.store_id===storeId?'checked':''}><span>${esc(s.store_id)}</span></label>`).join('')||'<span class="empty">没有商店</span>';
+    updateListingStoreCount();
+  }).catch(e=>{if($('#lsStoreOptions'))$('#lsStoreOptions').innerHTML='<span class="empty">商店列表读取失败</span>';toast(e.message,'bad')});
+  api('/api/catalog/groups?complete_only=1').then(groups=>{$('#lsCategory').innerHTML='<option value="">全部类别</option>'+groups.map(g=>`<option value="${esc(g.key)}">${esc(g.name)} · ${g.count}</option>`).join('')}).catch(e=>toast(e.message,'bad'));
+  if(prefillItem)pickListingItem(prefillItem);
+}
+function listingStoreChecks(){return [...document.querySelectorAll('#lsStoreOptions input[name="lsStore"]')]}
+function updateListingStoreCount(){const count=$('#lsStoreCount');if(count)count.textContent=`已选 ${listingStoreChecks().filter(x=>x.checked).length} 家`}
+function toggleListingStores(){const checks=listingStoreChecks(),all=checks.length>0&&checks.every(x=>x.checked);checks.forEach(x=>x.checked=!all);updateListingStoreCount()}
+async function searchListingItems(){
+  const q=$('#lsSearch')?.value?.trim(),group=$('#lsCategory')?.value;
+  if(!q&&!group){$('#lsResults').innerHTML='<div class="empty">输入关键字或选择类别</div>';return}
+  try{
+    const params=new URLSearchParams({complete_only:'1',q,limit:'30'});if(group)params.set('group',group);
+    const rows=await api('/api/catalog/items?'+params);
+    $('#lsResults').innerHTML=rows.map(x=>`<div class="result" onclick="pickListingItem('${esc(x.item_id)}')"><div class="catalog-product"><span class="catalog-thumb"><img src="${webURL('catalog-media/items/'+encodeURIComponent(x.item_id)+'.webp')}" alt="" loading="lazy" onerror="const p=this.parentNode;this.remove();p.classList.add('missing');p.textContent='暂无'"></span><div><b>${esc(x.name||x.item_id)}</b><div class="muted mono">${esc(x.item_id)}${x.group?' · '+esc(x.group):''}</div></div></div><span class="pill ok">选择</span></div>`).join('')||'<div class="empty">没有匹配商品</div>';
+  }catch(e){toast(e.message,'bad')}
+}
+function pickListingItem(id){
+  LISTING_PICK=id;
+  $('#lsForm').style.display='grid';
+  $('#lsPicked').textContent=id;
+  $('#lsSubmit').disabled=false;
+}
+async function submitStoreListing(){
+  if(!LISTING_PICK){toast('请先选择商品','bad');return}
+  const storeIds=listingStoreChecks().filter(x=>x.checked).map(x=>x.value);
+  if(!storeIds.length){toast('请至少选择一家商店','bad');return}
+  const num=id=>{const v=$('#'+id).value.trim();return v===''?0:Number(v)};
+  const body={store_ids:storeIds,item_id:LISTING_PICK,silver:num('ls_silver'),gold:num('ls_gold'),stock:num('ls_stock')};
+  try{
+    const result=await api('/api/stores/items/list',{method:'POST',body:JSON.stringify(body)});
+    closeModal();toast(`已在 ${result.store_count||storeIds.length} 家商店上架：${LISTING_PICK}`);await loadStoreItems();
+  }catch(e){toast(e.message,'bad')}
+}
+let CUSTOM_BASE=null;
+let CUSTOM_EDIT_ID=null;
+function openCustomProduct(existingID=null){
+  CUSTOM_BASE=null;
+  CUSTOM_EDIT_ID=existingID;
+  showModal(existingID?'编辑定制商品':'创建定制商品','',
+  `<div class="toolbar" ${existingID?'style="display:none"':''}><select id="cpCategory" aria-label="基础商品类别" onchange="searchCustomProductBases()"><option value="">全部类别</option></select><input class="grow" id="cpSearch" placeholder="搜索基础商品名称或 ID" oninput="debounce('cp',searchCustomProductBases,240)"></div>
+   <div class="results" id="cpResults" ${existingID?'hidden':''}><div class="empty">输入关键词或选择类别</div></div>
+   <div id="cpEditor" hidden style="margin-top:12px">
+    <div class="muted" id="cpBaseSummary"></div>
+    <div class="field" style="margin-top:10px"><label>后台识别名</label><input id="cpName" maxlength="120" placeholder="输入后台识别名"></div>
+    <div id="cpParams" style="margin-top:10px"></div>
+    <div class="actions" style="justify-content:flex-end;margin-top:14px"><button class="btn alt" onclick="closeModal()">取消</button><button class="btn good" id="cpCreate" onclick="createCustomProduct()">${existingID?'保存修改':'创建并继续上架'}</button></div>
+   </div>`,'custom-product');
+  if(existingID)api('/api/custom-products?item_id='+encodeURIComponent(existingID)).then(base=>renderCustomProductEditor(base)).catch(e=>toast(e.message,'bad'));
+  else api('/api/catalog/groups?complete_only=1').then(groups=>{$('#cpCategory').innerHTML='<option value="">全部类别</option>'+groups.map(g=>`<option value="${esc(g.key)}">${esc(g.name)} · ${g.count}</option>`).join('')}).catch(e=>toast(e.message,'bad'));
+}
+async function searchCustomProductBases(){
+  const q=$('#cpSearch')?.value?.trim(),group=$('#cpCategory')?.value;
+  if(!q&&!group){$('#cpResults').innerHTML='<div class="empty">输入关键词或选择类别</div>';return}
+  try{
+    const params=new URLSearchParams({complete_only:'1',q,limit:'30'});if(group)params.set('group',group);
+    const rows=await api('/api/catalog/items?'+params);
+    $('#cpResults').innerHTML=rows.map(x=>`<div class="result" data-id="${esc(x.item_id)}" onclick="pickCustomProductBase(this.dataset.id)"><div class="catalog-product"><span class="catalog-thumb"><img src="${webURL('catalog-media/items/'+encodeURIComponent(x.item_id)+'.webp')}" alt="" loading="lazy" onerror="const p=this.parentNode;this.remove();p.classList.add('missing');p.textContent='暂无'"></span><div><b>${esc(x.name||x.item_id)}</b><div class="muted mono">${esc(x.item_id)} · ${esc(x.group||'')}</div></div></div><span class="pill ok">选择</span></div>`).join('')||'<div class="empty">没有匹配商品</div>';
+  }catch(e){toast(e.message,'bad')}
+}
+async function pickCustomProductBase(itemID){
+  try{
+    const base=await api('/api/custom-products/base?item_id='+encodeURIComponent(itemID));
+    renderCustomProductEditor(base);
+  }catch(e){toast(e.message,'bad')}
+}
+function renderCustomProductEditor(base){
+    CUSTOM_BASE=base;
+    $('#cpBaseSummary').textContent=`${CUSTOM_EDIT_ID?'定制商品':'基础商品'}：${base.name} · ${base.item_id} · 类别 ${base.category} · 价目 ${fmt(base.silver)} 银币 / ${fmt(base.gold)} 金币`;
+    $('#cpName').value=CUSTOM_EDIT_ID?base.name:base.name+' 定制';
+    const fields=(base.parameters||[]).map((p,i)=>{
+      const special=p.path==='kngaaefkpka'?'cpMaxLoad':p.path.endsWith('.omghfmdfjpc')||p.path==='omghfmdfjpc'?'cpMaxDrag':`cpParam${i}`;
+      const label=special==='cpMaxLoad'?'承力上限（kg）':special==='cpMaxDrag'?'最大曳力（kg）':p.label;
+      return `<div class="field"><label for="${special}" title="${esc(p.path)}">${esc(label)}</label><input id="${special}" data-path="${esc(p.path)}" data-kind="${esc(p.kind)}" data-original="${esc(p.value)}" value="${esc(p.value)}" inputmode="${p.kind==='integer'?'numeric':'decimal'}" autocomplete="off"><div class="muted mono" style="font-size:10px;margin-top:3px">${esc(p.path)}</div></div>`;
+    });
+    $('#cpParams').innerHTML=fields.length?`<details open><summary>商品属性 · ${fields.length}</summary><div class="form-grid cp-param-grid" style="margin-top:10px">${fields.join('')}</div></details>`:'<div class="muted">该商品没有可编辑的数值属性。</div>';
+    $('#cpEditor').hidden=false;
+}
+async function createCustomProduct(){
+  if(!CUSTOM_BASE){toast('请先选择基础商品','bad');return}
+  const body=CUSTOM_EDIT_ID?{item_id:CUSTOM_EDIT_ID,name:$('#cpName').value.trim(),parameters:{}}:{base_item_id:CUSTOM_BASE.item_id,name:$('#cpName').value.trim(),parameters:{}};
+  for(const input of document.querySelectorAll('#cpParams input[data-path]')){
+    const value=input.value.trim();
+    if(value===input.dataset.original)continue;
+    if(!value||input.dataset.kind==='integer'&&!/^\d+$/.test(value)||input.dataset.kind!=='integer'&&!Number.isFinite(Number(value))){toast('请填写有效的商品属性数值','bad');input.focus();return}
+    body.parameters[input.dataset.path]=value;
+  }
+  const button=$('#cpCreate');button.disabled=true;
+  try{
+    const result=await api(CUSTOM_EDIT_ID?'/api/custom-products/update':'/api/custom-products',{method:'POST',body:JSON.stringify(body)});
+    const editing=Boolean(CUSTOM_EDIT_ID);
+    closeModal();toast((editing?'已更新定制商品：':'已创建定制商品：')+result.item_id);
+    if(editing)await loadStoreItems();else openStoreListing(result.item_id);
+  }catch(e){toast(e.message,'bad')}
+  finally{if($('#cpCreate'))$('#cpCreate').disabled=false}
 }
 let FISH_AREAS=[];
 const FISH_RULE_SWITCHES={
@@ -1589,6 +1816,19 @@ function ensureBaitMap(force){
     return BAIT_MAP;
   }).catch(e=>{BAIT_MAP_P=null;throw e});
   return BAIT_MAP_P;
+}
+async function refreshFishBaitSummary(){
+  const map=await ensureBaitMap(true);
+  if(!FISH_CFG)return;
+  FISH_CFG.fish.forEach(row=>{
+    const pref=map[row.fish_key];
+    row.bait_source=pref?.source||'default';
+    row.bait_enabled=pref?.source==='override'&&!!pref.enabled;
+    row.bait_groups=pref?.groups||[];
+    row.bait_rotate_sec=pref?.rotate_sec||0;
+    row.bait_rotate_mode=pref?.rotate_mode||'soft';
+  });
+  renderFishRows();
 }
 // 鱼口列表里的一行饵料摘要：规则吃/不吃 + tier3 饵名称 + 轮换状态。
 // row 是 /api/fish/config 返回的鱼种行，带权威的 bait_* 字段；
@@ -1779,7 +2019,7 @@ function syncFishRows(){
 function renderFishRows(){
   if(!FISH_CFG)return;const q=($('#fishFilter')?.value||'').toLowerCase();
   const rows=FISH_CFG.fish.map((f,i)=>({f,i})).filter(x=>!q||`${x.f.fish_key} ${x.f.name_zh}`.toLowerCase().includes(q));
-  $('#fishRows').innerHTML=`<div class="table-wrap"><table class="fish-table"><thead><tr><th>启用</th><th>鱼种</th><th>爱吃的饵（静态规则 / 实证 · 轮换）</th><th>基础权重</th><th>覆盖权重</th><th>来源</th></tr></thead><tbody>${rows.map(({f,i})=>`<tr><td><input class="switch" type="checkbox" id="fe_${i}" ${f.enabled?'checked':''} onchange="syncFishRows()"></td><td><div class="item-cell"><img class="fish-icon" src="icons/fish/${encodeURIComponent(String(f.fish_key||'').toLowerCase().replace(/\./g,'_'))}.png" onerror="this.style.display='none'"><div><b>${esc(f.name_zh||f.fish_key)}</b><div class="muted mono">${esc(f.fish_key)}</div></div></div></td><td>${baitSummaryHTML(f.fish_key,f)}</td><td>${Number(f.base_weight).toFixed(2)}</td><td><input class="mini-input" id="fw_${i}" type="number" min="0" step="0.1" value="${f.weight}" onchange="syncFishRows()"></td><td>${f.has_override?'<span class="tag gold">覆盖</span>':'<span class="tag">静态</span>'}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">没有匹配鱼种</td></tr>'}</tbody></table></div>`;
+  $('#fishRows').innerHTML=`<div class="table-wrap"><table class="fish-table"><thead><tr><th>启用</th><th>鱼种</th><th>爱吃的饵（静态规则 / 实证 · 轮换）</th><th>基础权重</th><th>覆盖权重</th><th>来源</th></tr></thead><tbody>${rows.map(({f,i})=>`<tr><td><input class="switch" type="checkbox" id="fe_${i}" ${f.enabled?'checked':''} onchange="syncFishRows()"></td><td><div class="catalog-product"><span class="catalog-thumb fish-thumb"><img src="${webURL('catalog-media/fish/'+encodeURIComponent(f.fish_key)+'.webp')}" alt="" loading="lazy" onerror="const p=this.parentNode;this.remove();p.classList.add('missing');p.textContent='暂无'"></span><div><b>${esc(f.name_zh||f.fish_key)}</b><div class="muted mono">${esc(f.fish_key)}</div></div></div></td><td>${baitSummaryHTML(f.fish_key,f)}<button class="btn alt sm" style="margin-top:5px" data-key="${esc(f.fish_key)}" data-name="${esc(f.name_zh||f.fish_key)}" onclick="editFishBaitRule(this.dataset.key,this.dataset.name)">编辑饵料</button></td><td>${Number(f.base_weight).toFixed(2)}</td><td><input class="mini-input" id="fw_${i}" type="number" min="0" step="0.1" value="${f.weight}" onchange="syncFishRows()"></td><td>${f.has_override?'<span class="tag gold">覆盖</span>':'<span class="tag">静态</span>'}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">没有匹配鱼种</td></tr>'}</tbody></table></div>`;
   const filtered=q.length>0;
   const on=$('#fishAllOn'),off=$('#fishAllOff');
   if(on)on.textContent=filtered?'启用筛选结果':'全部启用';
@@ -1809,7 +2049,7 @@ async function saveFishConfig(){
 }
 async function resetFishConfig(){askConfirm('恢复默认鱼口','清除「'+FISH_AREA+'」的全部人工覆盖，回到按鱼库静态权重出鱼。',async()=>{await api('/api/fish/config/reset',{method:'POST',body:JSON.stringify({area:FISH_AREA})});toast('已恢复默认鱼口，见审计日志');await selectFishArea(FISH_AREA)})}
 async function showAddFish(){showModal('添加鱼种到水域','搜索鱼库后添加到当前覆盖列表',`<input id="fishAddSearch" placeholder="中文名或 fish_key" oninput="debounce('fishAdd',searchFishPool)"><div class="results" id="fishAddResults"></div>`);searchFishPool()}
-async function searchFishPool(){const q=$('#fishAddSearch').value.trim();const list=await api('/api/fish/pool?q='+encodeURIComponent(q)+'&limit=80');$('#fishAddResults').innerHTML=list.map(x=>`<div class="result" data-key="${esc(x.fish_key)}" data-name="${esc(x.name_zh)}" onclick="addFishFromPool(this.dataset.key,this.dataset.name)"><div class="item-cell"><img class="fish-icon" src="icons/fish/${encodeURIComponent(String(x.fish_key||'').toLowerCase().replace(/\./g,'_'))}.png" onerror="this.style.display='none'"><div><b>${esc(x.name_zh)}</b><div class="muted mono">${esc(x.fish_key)}</div></div></div><span class="tag">${fmt(x.min_g)}-${fmt(x.max_g)}g</span></div>`).join('')||'<div class="empty">无结果</div>'}
+async function searchFishPool(){const q=$('#fishAddSearch').value.trim();const list=await api('/api/fish/pool?q='+encodeURIComponent(q)+'&limit=80');$('#fishAddResults').innerHTML=list.map(x=>`<div class="result" data-key="${esc(x.fish_key)}" data-name="${esc(x.name_zh)}" onclick="addFishFromPool(this.dataset.key,this.dataset.name)"><div><b>${esc(x.name_zh)}</b><div class="muted mono">${esc(x.fish_key)}</div></div><span class="tag">${fmt(x.min_g)}-${fmt(x.max_g)}g</span></div>`).join('')||'<div class="empty">无结果</div>'}
 function addFishFromPool(key,name){syncFishRows();if(FISH_CFG.fish.some(f=>f.fish_key===key)){closeModal();return toast('该鱼种已在列表','bad')}FISH_CFG.fish.push({fish_key:key,name_zh:name,base_weight:0,weight:1,enabled:true,has_override:true});closeModal();renderFishRows();toast('已加入，记得保存')}
 
 // ---- 区域固定鱼种（fish_zone）：纸地图拖拽编辑 + 本图名册选鱼 ----
@@ -2884,7 +3124,7 @@ async function saveHookProfile(){
 
 let MAIL_ATTACH=[];
 function addAttachment(){showModal('添加邮件附件','搜索物品目录',`<input id="attachSearch" placeholder="物品 ID / 名称" oninput="debounce('attachSearch',searchAttachItems)"><div class="results" id="attachResults"></div>`);searchAttachItems()}
-async function searchAttachItems(){const q=$('#attachSearch').value.trim();const list=await api('/api/catalog/items?q='+encodeURIComponent(q));$('#attachResults').innerHTML=list.map(x=>`<div class="result" data-id="${esc(x.item_id)}" data-name="${esc(x.name)}" onclick="pickAttachment(this.dataset.id,this.dataset.name)"><div class="item-cell"><img class="item-icon" src="icons/items/${encodeURIComponent(String(x.item_id||'').toLowerCase())}.webp" onerror="this.style.display='none'"><div><b>${esc(x.name||x.item_id)}</b><div class="muted mono">${esc(x.item_id)}</div></div></div><span class="tag">cat ${x.category}</span></div>`).join('')||'<div class="empty">无结果</div>'}
+async function searchAttachItems(){const q=$('#attachSearch').value.trim();const list=await api('/api/catalog/items?q='+encodeURIComponent(q));$('#attachResults').innerHTML=list.map(x=>`<div class="result" data-id="${esc(x.item_id)}" data-name="${esc(x.name)}" onclick="pickAttachment(this.dataset.id,this.dataset.name)"><div><b>${esc(x.name||x.item_id)}</b><div class="muted mono">${esc(x.item_id)}</div></div><span class="tag">cat ${x.category}</span></div>`).join('')||'<div class="empty">无结果</div>'}
 function pickAttachment(id,name){if(!MAIL_ATTACH.some(x=>x.item_id===id))MAIL_ATTACH.push({item_id:id,name,qty:1});closeModal();renderAttachments();toast('已添加 '+name)}
 function renderAttachments(){
   $('#attachments').innerHTML=MAIL_ATTACH.map((x,i)=>`<div class="attach-row"><div class="toolbar"><input value="${esc(x.name||x.item_id)}" disabled><div class="muted mono">${esc(x.item_id)}</div></div><input type="number" min="1" value="${x.qty}" onchange="MAIL_ATTACH[${i}].qty=+this.value"><button class="btn bad sm" aria-label="移除附件" onclick="MAIL_ATTACH.splice(${i},1);renderAttachments()">×</button></div>`).join('')||'<div class="muted">无附件</div>';

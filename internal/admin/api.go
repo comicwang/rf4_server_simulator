@@ -6,6 +6,8 @@ package admin
 
 import (
 	"context"
+	"crypto/tls"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,6 +28,7 @@ import (
 	"rf4server/internal/config"
 	"rf4server/internal/gameserver"
 	"rf4server/internal/logging"
+	"rf4server/internal/portal"
 	"rf4server/internal/store"
 )
 
@@ -47,9 +50,6 @@ type Server struct {
 
 	// 发布包根目录的「发布说明.md」；为空时按工作目录 / 可执行文件位置查找。
 	releaseNotesPath string
-
-	// 可选图标包按 Server 实例缓存；缺包或坏包保持 404 降级。
-	icons iconArchive
 }
 
 type plog struct{ l logger }
@@ -78,8 +78,10 @@ func NewServer(cfg config.Admin, db *store.DB, log logger, webFS fs.FS) *Server 
 	mux.HandleFunc("POST /api/tunables", auth(s.handleTunableSet))
 	mux.HandleFunc("POST /api/fish_tv_test", auth(s.handleFishTVTest))
 	mux.HandleFunc("GET /api/players", auth(s.handlePlayers))
+	mux.HandleFunc("POST /api/players/create", auth(s.handlePlayerCreate))
 	mux.HandleFunc("GET /api/players/detail", auth(s.handlePlayerDetail))
 	mux.HandleFunc("POST /api/players/update", auth(s.handlePlayerUpdate))
+	mux.HandleFunc("POST /api/players/account", auth(s.handlePlayerAccountSet))
 	mux.HandleFunc("GET /api/players/records", auth(s.handlePlayerRecords))
 	mux.HandleFunc("POST /api/players/records", auth(s.handlePlayerRecordsSave))
 	mux.HandleFunc("POST /api/players/membership", auth(s.handlePlayerMembership))
@@ -97,7 +99,14 @@ func NewServer(cfg config.Admin, db *store.DB, log logger, webFS fs.FS) *Server 
 	mux.HandleFunc("GET /api/stores", auth(s.handleStores))
 	mux.HandleFunc("GET /api/stores/items", auth(s.handleStoreItems))
 	mux.HandleFunc("POST /api/stores/items/update", auth(s.handleStoreItemUpdate))
+	mux.HandleFunc("GET /api/stores/product", auth(s.handleStoreProduct))
+	mux.HandleFunc("POST /api/stores/product/update", auth(s.handleStoreProductUpdate))
+	mux.HandleFunc("POST /api/stores/items/list", auth(s.handleStoreItemList))
 	mux.HandleFunc("POST /api/stores/items/reset", auth(s.handleStoreItemReset))
+	mux.HandleFunc("GET /api/custom-products/base", auth(s.handleCustomProductBase))
+	mux.HandleFunc("GET /api/custom-products", auth(s.handleCustomProductGet))
+	mux.HandleFunc("POST /api/custom-products", auth(s.handleCustomProductCreate))
+	mux.HandleFunc("POST /api/custom-products/update", auth(s.handleCustomProductUpdate))
 	mux.HandleFunc("GET /api/fish/areas", auth(s.handleFishAreas))
 	mux.HandleFunc("GET /api/fish/config", auth(s.handleFishConfig))
 	mux.HandleFunc("POST /api/fish/config", auth(s.handleFishConfigSave))
@@ -128,8 +137,7 @@ func NewServer(cfg config.Admin, db *store.DB, log logger, webFS fs.FS) *Server 
 	// 纸地图贴图运行时加载（素材不入仓库，见 paper_maps.go）：
 	// 先于 SPA FileServer 注册，web/ 内已不再内嵌 maps 目录。
 	mux.Handle("GET /maps/", http.HandlerFunc(s.handleMapTextures))
-	// 物品与鱼种图标同理由 ref/ 运行时加载（见 item_icons.go）。
-	mux.Handle("GET /icons/", http.HandlerFunc(s.handleIcons))
+	mux.Handle("GET /catalog-media/", http.HandlerFunc(s.handleCatalogMedia))
 	if webFS != nil {
 		mux.Handle("/", http.FileServer(http.FS(webFS)))
 	}
@@ -169,9 +177,20 @@ func (s *Server) updatePayload() *UpdateInfo { return s.updateInfo.Load() }
 
 // Start 启动监听（返回错误 channel 与绑定错误）。
 func (s *Server) Start() (<-chan error, error) {
+	var tlsConfig *tls.Config
+	if s.cfg.CertFile != "" || s.cfg.KeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(s.cfg.CertFile, s.cfg.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("admin TLS: %w", err)
+		}
+		tlsConfig = &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{cert}}
+	}
 	ln, err := net.Listen("tcp", s.cfg.HTTPAddr)
 	if err != nil {
 		return nil, err
+	}
+	if tlsConfig != nil {
+		ln = tls.NewListener(ln, tlsConfig)
 	}
 	s.ln = ln
 	errCh := make(chan error, 1)
@@ -718,12 +737,55 @@ func (s *Server) handlePlayerDetail(w http.ResponseWriter, r *http.Request) {
 		"membership_active": store.MembershipAt(p.Membership, p.MembershipExp, time.Now().Unix()).Active,
 		"stars":             p.Stars, "email": p.Email,
 		"role": p.Role, "banned": p.Banned,
+		"portal_account": func() any {
+			account, err := s.db.PortalAccountForPlayer(ctx, uid)
+			if err != nil {
+				return nil
+			}
+			return map[string]string{"username": account.Username}
+		}(),
 		"item_count": len(items), "keepnet_count": len(keepnet), "mail_count": len(mails),
 		"items": items, "keepnet": keepnet, "mails": mailRows, "skills": skills,
 		"skill_total": skillTotal, "skill_spent": skillSpent,
 		"skill_bonus": skillBonus, "available_points": skillAvail,
 		"happy_hour": happy,
 	})
+}
+
+func (s *Server) handlePlayerAccountSet(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		UID      int64  `json:"uid"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := readJSON(r, &req); err != nil || req.UID <= 0 {
+		httpError(w, 400, "参数错误")
+		return
+	}
+	username := strings.ToLower(strings.TrimSpace(req.Username))
+	if len(username) < 3 || len(username) > 32 || len(req.Password) < 10 || len(req.Password) > 72 {
+		httpError(w, 400, "账号需 3 至 32 个字符，密码需 10 至 72 个字符")
+		return
+	}
+	for _, ch := range username {
+		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '.' || ch == '_' || ch == '-') {
+			httpError(w, 400, "账号只能使用英文字母、数字、点、下划线和连字符")
+			return
+		}
+	}
+	if err := portal.SetAccountPassword(r.Context(), s.db, req.UID, username, req.Password); err != nil {
+		switch {
+		case err == sql.ErrNoRows:
+			httpError(w, 404, "玩家不存在")
+		case strings.Contains(strings.ToLower(err.Error()), "unique"):
+			httpError(w, 409, "该账号已绑定其他玩家")
+		default:
+			httpError(w, 500, "账号保存失败")
+		}
+		return
+	}
+	_ = s.db.AuditLogWrite(r.Context(), adminOf(r), "player_portal_account", strconv.FormatInt(req.UID, 10), "username="+username)
+	writeJSON(w, map[string]bool{"ok": true})
 }
 
 func (s *Server) handlePlayerUpdate(w http.ResponseWriter, r *http.Request) {
@@ -789,6 +851,127 @@ func (s *Server) handlePlayerUpdate(w http.ResponseWriter, r *http.Request) {
 	_ = s.db.AuditLogWrite(ctx, adminOf(r), "player_update", strconv.FormatInt(req.UID, 10), string(detail))
 	_ = s.db.QueuePush(ctx, mustJSON(map[string]any{"op": "refresh_player", "uid": req.UID}))
 	writeJSON(w, map[string]any{"ok": true})
+}
+
+// handlePlayerCreate 新建玩家档案。uid 缺省时取当前最大 uid+1（不低于
+// 1000001，与 gateway 的 userid_start 对齐）；其余字段缺省走新档默认值
+// （昵称 player · 等级 1 · 银币 5000）。新档不在线，无需推刷新队列。
+func (s *Server) handlePlayerCreate(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		UID           int64  `json:"uid"`
+		Name          string `json:"name"`
+		Email         string `json:"email"`
+		Level         *int64 `json:"level"`
+		XP            *int64 `json:"xp"`
+		Silver        *int64 `json:"silver"`
+		Gold          *int64 `json:"gold"`
+		Bank          *int64 `json:"bank"`
+		Membership    *int64 `json:"membership"`
+		MembershipExp *int64 `json:"membership_exp"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		httpError(w, 400, "参数错误")
+		return
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		name = "player"
+	}
+	if len([]rune(name)) > 40 {
+		httpError(w, 400, "昵称过长")
+		return
+	}
+	email := strings.TrimSpace(req.Email)
+	if len([]rune(email)) > 120 {
+		httpError(w, 400, "邮箱过长")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	uid := req.UID
+	if uid == 0 {
+		// 自增 uid 与 gateway 的 LAN 分号规则独立：这里只保证不撞现有档案。
+		if err := s.db.SQL.QueryRowContext(ctx,
+			`SELECT COALESCE(MAX(uid),1000000)+1 FROM profile`).Scan(&uid); err != nil {
+			httpError(w, 500, err.Error())
+			return
+		}
+	}
+	if uid <= 0 {
+		httpError(w, 400, "UID 必须是正整数")
+		return
+	}
+	var exists int
+	if err := s.db.SQL.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM profile WHERE uid=?`, uid).Scan(&exists); err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	if exists > 0 {
+		httpError(w, 400, "该 UID 已存在")
+		return
+	}
+	nonNeg := func(v *int64, what string) (int64, bool) {
+		if v == nil {
+			return 0, true
+		}
+		if *v < 0 {
+			httpError(w, 400, what+"不能为负数")
+			return 0, false
+		}
+		return *v, true
+	}
+	silver, ok := nonNeg(req.Silver, "银币")
+	if !ok {
+		return
+	}
+	if req.Silver == nil {
+		silver = 5000 // 与建表默认一致
+	}
+	gold, ok := nonNeg(req.Gold, "金币")
+	if !ok {
+		return
+	}
+	bank, ok := nonNeg(req.Bank, "银行存款")
+	if !ok {
+		return
+	}
+	// 新档基线等级 1 / 经验 0，与 EnsureProfile 建档口径一致。
+	lvl, xp := gameserver.AdminResolveLevelXP(req.Level, req.XP, 1, 0)
+	if lvl < 1 {
+		httpError(w, 400, "等级必须不低于 1")
+		return
+	}
+	membership, exp := int64(0), int64(0)
+	if req.Membership != nil || req.MembershipExp != nil {
+		if req.Membership != nil {
+			membership = *req.Membership
+		}
+		if req.MembershipExp != nil {
+			exp = *req.MembershipExp
+		}
+		if membership != 1 {
+			exp = 0
+		}
+		if membership < 0 || membership > 2 || (membership == 1 && (exp <= time.Now().Unix() || exp > 253402300799)) {
+			httpError(w, 400, "请选择有效的会员类型和到期时间")
+			return
+		}
+	}
+	now := float64(time.Now().Unix())
+	_, err := s.db.SQL.ExecContext(ctx, `
+		INSERT INTO profile(uid, name, level, xp, silver, gold, bank, region,
+		 membership, membership_exp, email, created_ts, updated_ts)
+		VALUES(?,?,?,?,?,?,?, 'CN', ?,?,?,?,?)`,
+		uid, name, lvl, xp, silver, gold, bank, membership, exp, email, now, now)
+	if err != nil {
+		httpError(w, 500, err.Error())
+		return
+	}
+	_ = s.db.AuditLogWrite(ctx, adminOf(r), "player_create", strconv.FormatInt(uid, 10),
+		fmt.Sprintf("name=%s level=%d silver=%d gold=%d bank=%d membership=%d email=%s",
+			name, lvl, silver, gold, bank, membership, email))
+	writeJSON(w, map[string]any{"ok": true, "uid": uid})
 }
 
 // handleGrantItem 将发物品指令写入共享队列，由主服务器执行以保持在线状态一致。

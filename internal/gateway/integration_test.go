@@ -23,7 +23,7 @@ func TestGatewayPlainHTTPCompatLogin(t *testing.T) {
 		t.Fatal("明文 HTTP 登录兼容口没有启动")
 	}
 	realClientURL := strings.TrimSuffix(gw.LoginPlainURL, "/login.php") +
-		"/lv54/https://api.rf4game.ru/login.php?login=return2&version=4.0.25034&region=CN&locale=zh-CN"
+		"/lv54/https://api.rf4game.ru/login.php?login=test_login&password=test+login+password&version=4.0.25034&region=CN&locale=zh-CN"
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {

@@ -2,18 +2,20 @@
 package portal
 
 import (
+	"context"
 	"crypto/rand"
 	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io/fs"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"rf4server/internal/store"
 )
@@ -23,21 +25,22 @@ var assets embed.FS
 
 type session struct {
 	uid     int64
-	host    string
+	version int64
 	expires time.Time
 }
 
 type Server struct {
 	db       *store.DB
-	resolve  func(string) int64
 	mu       sync.Mutex
 	sessions map[string]session
 	mux      *http.ServeMux
 }
 
-// New uses the same source-address identity as game login; callers cannot choose a UID.
-func New(db *store.DB, resolve func(string) int64) *Server {
-	s := &Server{db: db, resolve: resolve, sessions: map[string]session{}, mux: http.NewServeMux()}
+var ErrInvalidCredentials = errors.New("账号或密码错误，或账号暂不可用")
+
+// New serves account-authenticated player pages; callers cannot choose a UID.
+func New(db *store.DB) *Server {
+	s := &Server{db: db, sessions: map[string]session{}, mux: http.NewServeMux()}
 	s.mux.HandleFunc("POST /portal/api/session", s.login)
 	s.mux.HandleFunc("DELETE /portal/api/session", s.logout)
 	s.mux.HandleFunc("GET /portal/api/profile", s.profile)
@@ -53,6 +56,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Referrer-Policy", "same-origin")
+	if r.TLS == nil {
+		fail(w, http.StatusBadRequest, "个人中心登录需要 HTTPS")
+		return
+	}
 	if origin := r.Header.Get("Origin"); origin != "" {
 		u, err := url.Parse(origin)
 		if err != nil || u.Host != r.Host || (u.Scheme != "https" && u.Scheme != "http") {
@@ -63,13 +70,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func remoteHost(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
-}
 func write(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(value)
@@ -81,9 +81,19 @@ func fail(w http.ResponseWriter, code int, message string) {
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
-	uid := s.resolve(r.RemoteAddr)
-	if _, err := s.db.GetProfile(r.Context(), uid); err != nil {
-		fail(w, 404, "请先从当前设备进入游戏，创建角色后再打开个人中心")
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024))
+	d.DisallowUnknownFields()
+	if d.Decode(&req) != nil || len(req.Username) < 3 || len(req.Username) > 32 || len(req.Password) < 10 || len(req.Password) > 72 {
+		fail(w, 400, "账号或密码无效")
+		return
+	}
+	uid, version, err := Authenticate(r.Context(), s.db, req.Username, req.Password)
+	if err != nil {
+		fail(w, 401, "账号或密码错误，或账号暂不可用")
 		return
 	}
 	var b [32]byte
@@ -103,9 +113,24 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		fail(w, 503, "会话较多，请稍后重试")
 		return
 	}
-	s.sessions[token] = session{uid: uid, host: remoteHost(r), expires: time.Now().Add(time.Hour)}
+	s.sessions[token] = session{uid: uid, version: version, expires: time.Now().Add(time.Hour)}
 	s.mu.Unlock()
 	write(w, map[string]any{"token": token})
+}
+
+// Authenticate resolves the administrator-assigned account to its player UID.
+func Authenticate(ctx context.Context, db *store.DB, username, password string) (int64, int64, error) {
+	account, err := db.PortalAccountByUsername(ctx, strings.ToLower(strings.TrimSpace(username)))
+	if err != nil {
+		return 0, 0, err
+	}
+	if bcrypt.CompareHashAndPassword([]byte(account.PasswordHash), []byte(password)) != nil {
+		return 0, 0, ErrInvalidCredentials
+	}
+	if err := provisionGamePassword(ctx, db, account, password); err != nil {
+		return 0, 0, err
+	}
+	return account.UID, account.Version, nil
 }
 
 func (s *Server) identity(w http.ResponseWriter, r *http.Request) (int64, bool) {
@@ -117,8 +142,11 @@ func (s *Server) identity(w http.ResponseWriter, r *http.Request) (int64, bool) 
 		ok = false
 	}
 	s.mu.Unlock()
-	if !ok || value.host != remoteHost(r) {
-		fail(w, 401, "请重新进入当前设备的个人中心")
+	if !ok || !s.db.ValidatePortalSession(r.Context(), value.uid, value.version) {
+		s.mu.Lock()
+		delete(s.sessions, token)
+		s.mu.Unlock()
+		fail(w, 401, "账号已失效，请重新登录")
 		return 0, false
 	}
 	return value.uid, true

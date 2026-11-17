@@ -9,8 +9,10 @@ package gameserver
 // 注意区分：root_spec 不是摩擦片额定（base_drag，官方语义里两者独立，比值 2.2~3.6×）。
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"rf4server/internal/store"
@@ -57,6 +59,20 @@ func reelRootSpec(itemID string) (float64, bool) {
 		return 0, false
 	}
 	return e.RootSpec, true
+}
+
+func (s *Server) reelRootSpecForItem(ctx context.Context, itemID string) (float64, bool) {
+	if spec, ok := reelRootSpec(itemID); ok {
+		return spec, true
+	}
+	if s == nil || s.DB == nil || !strings.HasPrefix(itemID, "custom_") {
+		return 0, false
+	}
+	baseID, err := s.DB.CustomItemBaseID(ctx, itemID)
+	if err != nil || baseID == "" {
+		return 0, false
+	}
+	return reelRootSpec(baseID)
 }
 
 // reelMechStrengthKg 按定义取机构强度（出厂满耐久锁轮承力标称值）。

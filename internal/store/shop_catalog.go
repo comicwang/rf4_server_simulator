@@ -110,6 +110,8 @@ type shopOverrideValue struct {
 	Silver sql.NullInt64
 	Gold   sql.NullInt64
 	Stock  sql.NullInt64
+	// Listed=1 表示后台强制上架：即使商品不在基础货架也挂到生效货架。
+	Listed sql.NullInt64
 }
 
 const (
@@ -153,7 +155,7 @@ func (d *DB) loadRecordedShopShelves(ctx context.Context) (map[string][]*ShopPri
 
 func (d *DB) loadShopOverrides(ctx context.Context, storeID string) (map[string]shopOverrideValue, error) {
 	rows, err := d.SQL.QueryContext(ctx, `
-		SELECT item_id, silver, gold, stock
+		SELECT item_id, silver, gold, stock, COALESCE(listed,0)
 		FROM shop_item_override WHERE store_id=?`, storeID)
 	if err != nil {
 		return nil, err
@@ -163,7 +165,7 @@ func (d *DB) loadShopOverrides(ctx context.Context, storeID string) (map[string]
 	for rows.Next() {
 		var itemID string
 		var v shopOverrideValue
-		if err := rows.Scan(&itemID, &v.Silver, &v.Gold, &v.Stock); err != nil {
+		if err := rows.Scan(&itemID, &v.Silver, &v.Gold, &v.Stock, &v.Listed); err != nil {
 			return nil, err
 		}
 		out[itemID] = v
@@ -173,7 +175,7 @@ func (d *DB) loadShopOverrides(ctx context.Context, storeID string) (map[string]
 
 func (d *DB) loadAllShopOverrides(ctx context.Context) (map[string]map[string]shopOverrideValue, error) {
 	rows, err := d.SQL.QueryContext(ctx, `
-		SELECT store_id, item_id, silver, gold, stock FROM shop_item_override`)
+		SELECT store_id, item_id, silver, gold, stock, COALESCE(listed,0) FROM shop_item_override`)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +184,7 @@ func (d *DB) loadAllShopOverrides(ctx context.Context) (map[string]map[string]sh
 	for rows.Next() {
 		var storeID, itemID string
 		var v shopOverrideValue
-		if err := rows.Scan(&storeID, &itemID, &v.Silver, &v.Gold, &v.Stock); err != nil {
+		if err := rows.Scan(&storeID, &itemID, &v.Silver, &v.Gold, &v.Stock, &v.Listed); err != nil {
 			return nil, err
 		}
 		m := out[storeID]
@@ -326,6 +328,58 @@ func applyShopOverrides(base []*ShopPrice, overrides map[string]shopOverrideValu
 	return out
 }
 
+// appendListedShopItems 把后台强制上架（listed=1）的覆盖商品追加到基础货架，
+// 顺序按 item_id 稳定排序，保证货架输出确定。价格优先取覆盖值；银/金币都
+// 未填时回退全局 item_price；库存未填时由 applyShopOverrides 的持续供货
+// 规则补到 1000。目录里已不存在（或从未存在）的商品跳过，避免客户端拿到
+// 无法渲染的货架行。
+func (d *DB) appendListedShopItems(ctx context.Context, base []*ShopPrice, overrides map[string]shopOverrideValue) ([]*ShopPrice, error) {
+	listed := make([]string, 0)
+	have := make(map[string]bool, len(base))
+	for _, row := range base {
+		have[row.ItemID] = true
+	}
+	for itemID, ov := range overrides {
+		if !ov.Listed.Valid || ov.Listed.Int64 != 1 || have[itemID] {
+			continue
+		}
+		listed = append(listed, itemID)
+	}
+	if len(listed) == 0 {
+		return base, nil
+	}
+	sort.Strings(listed)
+	for _, itemID := range listed {
+		var exists int
+		if err := d.SQL.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM item_def WHERE item_id=?`, itemID).Scan(&exists); err != nil {
+			return nil, err
+		}
+		if exists == 0 {
+			continue
+		}
+		ov := overrides[itemID]
+		row := &ShopPrice{ItemID: itemID}
+		if ov.Silver.Valid {
+			row.Silver = ov.Silver.Int64
+		}
+		if ov.Gold.Valid {
+			row.Gold = ov.Gold.Int64
+		}
+		if ov.Stock.Valid {
+			row.Stock = ov.Stock.Int64
+		}
+		if !ov.Silver.Valid && !ov.Gold.Valid {
+			if p, err := d.ItemPriceGet(ctx, itemID); err == nil {
+				row.Silver, row.Gold, row.Stock = p.Silver, p.Gold, p.Stock
+			}
+		}
+		base = append(base, row)
+		have[itemID] = true
+	}
+	return base, nil
+}
+
 func (d *DB) effectiveShopShelf(ctx context.Context, storeID string) (*shopShelfResolution, error) {
 	storeID = strings.TrimSpace(storeID)
 	catalog, err := embeddedShopKindCatalog()
@@ -340,17 +394,19 @@ func (d *DB) effectiveShopShelf(ctx context.Context, storeID string) (*shopShelf
 	}
 	if rows, ok := houses[storeID]; ok {
 		base := copyShopPrices(rows)
-		var overrides map[string]shopOverrideValue
-		if len(base) > 0 {
-			overrides, err = d.loadShopOverrides(ctx, storeID)
-			if err != nil {
-				return nil, err
-			}
+		overrides, err := d.loadShopOverrides(ctx, storeID)
+		if err != nil {
+			return nil, err
+		}
+		effective := applyShopOverrides(base, overrides)
+		effective, err = d.appendListedShopItems(ctx, effective, overrides)
+		if err != nil {
+			return nil, err
 		}
 		def := catalog.Stores[storeID]
 		return &shopShelfResolution{
 			Base:         base,
-			Effective:    applyShopOverrides(base, overrides),
+			Effective:    effective,
 			Overrides:    overrides,
 			Definition:   def,
 			CatalogKnown: true,
@@ -366,18 +422,21 @@ func (d *DB) effectiveShopShelf(ctx context.Context, storeID string) (*shopShelf
 	if err != nil {
 		return nil, err
 	}
-	overrides := map[string]shopOverrideValue{}
-	if len(base) > 0 {
-		overrides, err = d.loadShopOverrides(ctx, storeID)
-		if err != nil {
-			return nil, err
-		}
+	overrides, err := d.loadShopOverrides(ctx, storeID)
+	if err != nil {
+		return nil, err
 	}
 	effective := applyShopOverrides(base, overrides)
 	// 补齐货架：历史抓取/内嵌模板缺的新商品（例如 2025 款）在客户端看来是
 	// “无库存”，这里按“同店内已有品类 +（品牌店）同品牌”补上，价格缺失时
 	// 用同类商品中位价估价。
 	effective, _, err = d.augmentShopShelf(ctx, def, effective)
+	if err != nil {
+		return nil, err
+	}
+	// 后台强制上架最后追加：避免 augment 把上架商品的整个品类按补齐规则
+	// 扩散进货架（在饵店挂一件食品，不应连带把所有食品都拉上架）。
+	effective, err = d.appendListedShopItems(ctx, effective, overrides)
 	if err != nil {
 		return nil, err
 	}

@@ -60,6 +60,7 @@ type AdminStoreItemView struct {
 	ItemID      string `json:"item_id"`
 	Name        string `json:"name"`
 	Category    int64  `json:"category"`
+	Group       string `json:"group"`
 	Silver      int64  `json:"silver"`
 	Gold        int64  `json:"gold"`
 	Stock       int64  `json:"stock"`
@@ -67,6 +68,8 @@ type AdminStoreItemView struct {
 	BaseGold    int64  `json:"base_gold"`
 	BaseStock   int64  `json:"base_stock"`
 	HasOverride bool   `json:"has_override"`
+	// Listed=后台强制上架的商品（不在基础货架，删除覆盖即下架）。
+	Listed bool `json:"listed"`
 }
 
 // FishAreaView 可配置鱼口的水域。
@@ -407,7 +410,7 @@ func (d *DB) loadAdminShopItemMeta(ctx context.Context, itemIDs []string) (map[s
 	return out, nil
 }
 
-func (d *DB) ListAdminStoreItems(ctx context.Context, storeID, query string, limit int) ([]*AdminStoreItemView, error) {
+func (d *DB) ListAdminStoreItems(ctx context.Context, storeID, query string, category int64, limit int) ([]*AdminStoreItemView, error) {
 	storeID = strings.TrimSpace(storeID)
 	if storeID == "" {
 		return nil, fmt.Errorf("store_id 不能为空")
@@ -437,15 +440,19 @@ func (d *DB) ListAdminStoreItems(ctx context.Context, storeID, query string, lim
 	out := make([]*AdminStoreItemView, 0, len(effective))
 	for _, row := range effective {
 		m := meta[row.ItemID]
+		if category >= 0 && m.Category != category {
+			continue
+		}
 		if needle != "" && !strings.Contains(strings.ToLower(row.ItemID), needle) &&
 			!strings.Contains(strings.ToLower(m.Name), needle) {
 			continue
 		}
 		base := baseByID[row.ItemID]
 		if base == nil {
-			continue
+			// 强制上架的商品不在基础货架，用上架价充当原价展示。
+			base = row
 		}
-		_, hasOverride := shelf.Overrides[row.ItemID]
+		ov, hasOverride := shelf.Overrides[row.ItemID]
 		out = append(out, &AdminStoreItemView{
 			StoreID:     storeID,
 			ItemID:      row.ItemID,
@@ -458,6 +465,7 @@ func (d *DB) ListAdminStoreItems(ctx context.Context, storeID, query string, lim
 			BaseGold:    base.Gold,
 			BaseStock:   base.Stock,
 			HasOverride: hasOverride,
+			Listed:      hasOverride && ov.Listed.Valid && ov.Listed.Int64 == 1,
 		})
 		if len(out) >= limit {
 			break
@@ -495,6 +503,95 @@ func (d *DB) ResetAdminShopOverride(ctx context.Context, storeID, itemID string)
 	_, err := d.SQL.ExecContext(ctx,
 		`DELETE FROM shop_item_override WHERE store_id=? AND item_id=?`, storeID, itemID)
 	return err
+}
+
+// SetAdminShopListing 后台强制上架：把商品以 listed=1 的覆盖行挂到指定
+// 商店，即使它不在该店基础货架。价格优先用调用方给的值；银/金币都为 0 时
+// 回退全局 item_price；库存为 0 时按持续供货口径补到 1000。商品完整性
+// （是否完整目录行）由调用方校验，这里只保证价目形状可用。
+func (d *DB) SetAdminShopListing(ctx context.Context, storeID, itemID string, silver, gold, stock int64, updatedBy string) error {
+	return d.SetAdminShopListings(ctx, []string{storeID}, itemID, silver, gold, stock, updatedBy)
+}
+
+func (d *DB) SetAdminShopListings(ctx context.Context, storeIDs []string, itemID string, silver, gold, stock int64, updatedBy string) error {
+	itemID = strings.TrimSpace(itemID)
+	if itemID == "" {
+		return fmt.Errorf("item_id 不能为空")
+	}
+	unique := make([]string, 0, len(storeIDs))
+	seen := make(map[string]struct{}, len(storeIDs))
+	for _, storeID := range storeIDs {
+		storeID = strings.TrimSpace(storeID)
+		if storeID == "" {
+			continue
+		}
+		if _, ok := seen[storeID]; ok {
+			continue
+		}
+		seen[storeID] = struct{}{}
+		unique = append(unique, storeID)
+	}
+	if len(unique) == 0 || len(unique) > 128 {
+		return fmt.Errorf("请选择 1~128 个商店")
+	}
+	if silver < 0 || gold < 0 || stock < 0 {
+		return fmt.Errorf("价格和库存不能为负数")
+	}
+	stores, err := d.ListAdminStores(ctx)
+	if err != nil {
+		return err
+	}
+	known := make(map[string]struct{}, len(stores))
+	for _, store := range stores {
+		known[store.StoreID] = struct{}{}
+	}
+	for _, storeID := range unique {
+		if _, ok := known[storeID]; !ok {
+			return fmt.Errorf("商店不存在: %s", storeID)
+		}
+	}
+	if silver == 0 && gold == 0 {
+		if p, err := d.ItemPriceGet(ctx, itemID); err == nil {
+			if p.Silver > 0 {
+				silver = p.Silver
+			}
+			if p.Gold > 0 {
+				gold = p.Gold
+			}
+		}
+	}
+	if silver == 0 && gold == 0 {
+		return fmt.Errorf("该商品没有全局价目，请至少填写银价或金币价")
+	}
+	if stock == 0 {
+		stock = 1000
+	}
+	var exists int
+	if err := d.SQL.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM item_def WHERE item_id=?`, itemID).Scan(&exists); err != nil {
+		return err
+	}
+	if exists == 0 {
+		return fmt.Errorf("商品不存在: %s", itemID)
+	}
+	tx, err := d.SQL.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	updatedTS := float64(time.Now().UnixNano()) / 1e9
+	for _, storeID := range unique {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO shop_item_override(store_id,item_id,silver,gold,stock,listed,updated_ts,updated_by)
+			VALUES(?,?,?,?,?,1,?,?)
+			ON CONFLICT(store_id,item_id) DO UPDATE SET
+				silver=excluded.silver, gold=excluded.gold, stock=excluded.stock,
+				listed=1, updated_ts=excluded.updated_ts, updated_by=excluded.updated_by`,
+			storeID, itemID, silver, gold, stock, updatedTS, updatedBy); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (d *DB) ListFishAreasAdmin(ctx context.Context) ([]*FishAreaView, error) {

@@ -112,5 +112,5 @@
 
 
 
-<dialog id="local-auth" aria-labelledby="local-auth-title"><form id="local-login"><h2 id="local-auth-title">进入个人中心</h2><p>沿用游戏的设备识别方式，进入当前设备对应的角色。</p><p id="local-auth-message" role="status"></p><div class="local-actions"><button type="button" id="local-auth-close">关闭</button><button type="submit">登录</button></div></form></dialog></body>
+<dialog id="local-auth" aria-labelledby="local-auth-title"><form id="local-login"><h2 id="local-auth-title">进入个人中心</h2><label>账号<input name="username" id="local-username" autocomplete="username" required minlength="3" maxlength="32"></label><label>密码<input name="password" id="local-password" type="password" autocomplete="current-password" required minlength="10" maxlength="72"></label><p id="local-auth-message" role="status"></p><div class="local-actions"><button type="button" id="local-auth-close">关闭</button><button type="submit">登录</button></div></form></dialog></body>
 </html>

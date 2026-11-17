@@ -9,6 +9,7 @@ package gateway
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"sync"
@@ -20,9 +21,10 @@ import (
 
 // TokenInfo 登录签发的会话凭据信息。
 type TokenInfo struct {
-	Userid   int64  `json:"userid"`
-	IssuedAt int64  `json:"issued_at"`
-	Region   string `json:"region"`
+	Userid         int64  `json:"userid"`
+	IssuedAt       int64  `json:"issued_at"`
+	Region         string `json:"region"`
+	AccountVersion int64  `json:"account_version"`
 }
 
 // Handoff 重连接管状态：RC4 双向流 + 出帧 wire_id 计数。
@@ -84,12 +86,23 @@ func (m *MemStore) LookupToken(_ context.Context, token string) (TokenInfo, bool
 		return e.info, true, nil
 	}
 	// 前缀兜底（客户端回传 logintoken=token[:64] 的场景）
+	if !isTokenPrefix(token) {
+		return TokenInfo{}, false, nil
+	}
 	for t, e := range m.tokens {
 		if len(t) > len(token) && strings.HasPrefix(t, token) && time.Now().Before(e.expires) {
 			return e.info, true, nil
 		}
 	}
 	return TokenInfo{}, false, nil
+}
+
+func isTokenPrefix(token string) bool {
+	if len(token) != 64 {
+		return false
+	}
+	_, err := hex.DecodeString(token)
+	return err == nil
 }
 
 func (m *MemStore) SaveHandoff(_ context.Context, token string, h Handoff, _ time.Duration) error {

@@ -53,6 +53,8 @@ game:
 
 admin:
   http_addr: ":8080"                          # 仅 cmd/admin 独立调试使用；launcher 不监听此端口。
+  cert_file: ""                              # 独立 admin 的 HTTPS 证书；与 key_file 同时配置时启用。
+  key_file: ""
   jwt_secret: "replace-with-long-random-secret"  # 管理员会话 token 的签名密钥。
   obs_addr: ":9503"                           # 仅 cmd/admin 独立调试使用。
   username: "admin"                           # 管理员用户名。

@@ -211,9 +211,12 @@ func TestReelPartSnapshotWorkshop(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				assertWorkshopPushMatchesResponse(t, srv, v.ArgItem(0), body)
-				if balancePush := awaitPushEnvelope(t, peer); balancePush.Main != 2 || balancePush.Sub != 1 {
-					t.Fatal("missing balance refresh")
+				pushed, err := proto.EncodeValue(v.ArgItem(0), srv.Table())
+				if err != nil {
+					t.Fatal(err)
+				}
+				if string(pushed) != string(body) {
+					t.Fatal("AfterResponse differs from response")
 				}
 				def, defErr := db.GetItemDefByItemID(ctx, id)
 				if defErr != nil || def == nil {
@@ -225,7 +228,7 @@ func TestReelPartSnapshotWorkshop(t *testing.T) {
 				}
 				previousRatio = ratio
 			}
-			// Same-model repair affects only the selected gear.
+			// Same-model repair is a full reel service, not a single-part patch.
 			fresh := mustItem(t, db, reel.GUID)
 			fs := snapshotFields(t, fresh.FieldsJSON)
 			gear, _ := snapshotPart(t, srv, fs, 52)
@@ -261,9 +264,9 @@ func TestReelPartSnapshotWorkshop(t *testing.T) {
 				t.Fatal("gear repair response model")
 			}
 			fresh = assertReelSnapshot(t, srv, reel.GUID, "rgm_ef_spark10021",
-				itemDefF32(washerDef, gearAttrDragMax)*fresh.Workmanship*.4)
-			if math.Abs(fresh.Durability-.55) > 1e-6 {
-				t.Fatalf("remaining worn parts should limit body durability to .55, got %v", fresh.Durability)
+				itemDefF32(washerDef, gearAttrDragMax)*fresh.Workmanship)
+			if fresh.Durability != 1 {
+				t.Fatalf("same-model repair should restore body durability, got %v", fresh.Durability)
 			}
 			fs = snapshotFields(t, fresh.FieldsJSON)
 			gear, _ = snapshotPart(t, srv, fs, 52)
@@ -271,16 +274,16 @@ func TestReelPartSnapshotWorkshop(t *testing.T) {
 				t.Fatal("gear not repaired")
 			}
 			bearing, _ = snapshotPart(t, srv, fs, 7)
-			if math.Abs(snapshotFloat(bearing.Fields, bearing.Class, csDurability)-.4) > 1e-6 {
-				t.Fatal("unselected bearing should retain wear")
+			if snapshotFloat(bearing.Fields, bearing.Class, csDurability) != 1 {
+				t.Fatal("bearing should be repaired with the reel")
 			}
 			washer, washerDef = snapshotPart(t, srv, fs, 9)
-			if math.Abs(snapshotFloat(washer.Fields, washer.Class, csDurability)-.4) > 1e-6 {
-				t.Fatal("unselected friction washer should retain wear")
+			if snapshotFloat(washer.Fields, washer.Class, csDurability) != 1 {
+				t.Fatal("friction washer durability should be restored with the reel")
 			}
 			if current, present, _ := frictionWasherDrag(washer); !present ||
-				math.Abs(current-itemDefF32(washerDef, gearAttrDragMax)*fresh.Workmanship*.4) > 1e-6 {
-				t.Fatalf("unselected friction washer drag should be retained, got %v", current)
+				math.Abs(current-itemDefF32(washerDef, gearAttrDragMax)*fresh.Workmanship) > 1e-6 {
+				t.Fatalf("friction washer drag should be restored, got %v", current)
 			}
 			if err := db.SetItemDurability(ctx, reel.GUID, .6); err != nil {
 				t.Fatal(err)
@@ -522,9 +525,12 @@ func TestReelPartSnapshotBatchAndUnrelatedParts(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assertWorkshopPushMatchesResponse(t, srv, value.ArgItem(0), body)
-			if balancePush := awaitPushEnvelope(t, peer); balancePush.Main != 2 || balancePush.Sub != 1 {
-				t.Fatal("missing balance refresh")
+			pushed, err := proto.EncodeValue(value.ArgItem(0), srv.Table())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(pushed) != string(body) {
+				t.Fatal("batch refresh differs from response")
 			}
 			// Even after building and sending a projected tree, the persistent child state remains untouched.
 			checkProtected()

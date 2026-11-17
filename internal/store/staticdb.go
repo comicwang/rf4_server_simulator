@@ -19,8 +19,9 @@ import (
 // connector checks it before opening a replacement connection, so a pool
 // recycle cannot silently drop the read-only ATTACH or its write guard.
 type staticState struct {
-	path    string
-	enabled atomic.Bool
+	path        string
+	enabled     atomic.Bool
+	customItems atomic.Bool
 }
 
 // staticConnector wraps the modernc connector and prepares each physical
@@ -141,14 +142,60 @@ func prepareStaticConnection(ctx context.Context, conn driver.Conn, state *stati
 		return fmt.Errorf("ATTACH 静态配置库（只读）: %w", err)
 	}
 	for _, table := range StaticTables {
-		stmt := fmt.Sprintf(`CREATE TEMP VIEW %s AS SELECT * FROM static.%s`,
-			quoteIdentifier(table), quoteIdentifier(table))
+		stmt := staticViewSQL(table, state.customItems.Load())
 		if err := execStaticSQL(ctx, execer, stmt); err != nil {
 			return fmt.Errorf("创建静态表只读视图 %s: %w", table, err)
 		}
 	}
 	if state.enabled.Load() {
 		return registerStaticAuthorizer(conn)
+	}
+	return nil
+}
+
+func staticViewSQL(table string, customItems bool) string {
+	quoted := quoteIdentifier(table)
+	if !customItems {
+		return fmt.Sprintf(`CREATE TEMP VIEW %s AS SELECT * FROM static.%s`, quoted, quoted)
+	}
+	switch table {
+	case "item_def":
+		return `CREATE TEMP VIEW item_def AS
+			SELECT numeric_id,item_id,category,kind,brand,attrs_json FROM static.item_def
+			UNION ALL
+			SELECT numeric_id,item_id,category,kind,brand,attrs_json FROM main.custom_item_def`
+	case "item_catalog":
+		return `CREATE TEMP VIEW item_catalog AS
+			SELECT item_id,name,name_zh,kind,numeric_id FROM static.item_catalog
+			UNION ALL
+			SELECT item_id,name,name_zh,kind,numeric_id FROM main.custom_item_def`
+	case "item_price":
+		return `CREATE TEMP VIEW item_price AS
+			SELECT item_id,silver,gold,stock FROM static.item_price
+			UNION ALL
+			SELECT item_id,silver,gold,stock FROM main.custom_item_def`
+	default:
+		return fmt.Sprintf(`CREATE TEMP VIEW %s AS SELECT * FROM static.%s`, quoted, quoted)
+	}
+}
+
+func (d *DB) enableCustomItemViews(ctx context.Context) error {
+	if d == nil || d.static == nil {
+		return nil
+	}
+	conn, err := d.SQL.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	d.static.customItems.Store(true)
+	for _, table := range []string{"item_def", "item_catalog", "item_price"} {
+		if _, err := conn.ExecContext(ctx, `DROP VIEW `+quoteIdentifier(table)); err != nil {
+			return err
+		}
+		if _, err := conn.ExecContext(ctx, staticViewSQL(table, true)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

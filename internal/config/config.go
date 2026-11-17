@@ -87,6 +87,8 @@ func (g *Game) KeepaliveInterval() time.Duration {
 
 type Admin struct {
 	HTTPAddr  string `yaml:"http_addr"` // 仅 cmd/admin 独立调试监听，如 :8080
+	CertFile  string `yaml:"cert_file"`
+	KeyFile   string `yaml:"key_file"`
 	JWTSecret string `yaml:"jwt_secret"`
 	ObsAddr   string `yaml:"obs_addr"`
 	Username  string `yaml:"username"` // 管理员账号（以配置为准，启动时同步）

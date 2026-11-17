@@ -11,6 +11,8 @@ import (
 	"math"
 	"testing"
 
+	"rf4server/internal/config"
+	"rf4server/internal/logging"
 	"rf4server/internal/proto"
 	"rf4server/internal/store"
 )
@@ -63,6 +65,42 @@ func TestReelStrengthTableIsEmbedded(t *testing.T) {
 	loadReelStrengthTable()
 	if len(reelStrengthTable) < 500 {
 		t.Fatalf("轮根规格表加载条目过少: %d", len(reelStrengthTable))
+	}
+}
+
+func TestCustomReelInheritsRootSpecWithEditedDrag(t *testing.T) {
+	db := customConfigTestDB(t)
+	srv := NewServer(config.Game{}, logging.Discard(), nil)
+	srv.SetDB(db)
+	ctx := t.Context()
+	if _, err := db.EnsureProfile(ctx, 1000001); err != nil {
+		t.Fatal(err)
+	}
+	custom := createConfigTestVariant(t, db, "elcon_6003", 145)
+	const rootSpec = 411.0
+	if got, ok := srv.reelRootSpecForItem(ctx, custom.ItemID); !ok || got != rootSpec {
+		t.Fatalf("custom root spec = %v, found=%v, want %v", got, ok, rootSpec)
+	}
+	reel, err := srv.CreateItem(ctx, 1000001, custom.ItemID, "backpack", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row := reloadReel(t, db, reel.GUID)
+	fields, err := FieldsFromJSON(row.FieldsJSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, bearingDur := srv.reelPartStateFromRow(ctx, row, reelPartCatBearing)
+	wantRoot := rootSpec * clampUnit(bearingDur)
+	if got := reelRootStrengthForTest(t, fields, row.WireClass); math.Abs(got-wantRoot) > 0.02 {
+		t.Fatalf("custom reel root = %v, want inherited %v", got, wantRoot)
+	}
+	perf, err := srv.syncReelPerformance(ctx, row)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(perf.BaseDragKg-145) > 0.02 {
+		t.Fatalf("custom reel drag = %v, want edited 145", perf.BaseDragKg)
 	}
 }
 
